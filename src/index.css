@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Font Families ── */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+
+  /* ── Custom Color Scale Extensions ── */
+  /* Indigo intermediate shades */
+  --color-indigo-155: oklch(90.5% .053 254.6);
+  --color-indigo-650: oklch(48.4% .272 261.2);
+  --color-indigo-755: oklch(42.3% .215 264.3);
+
+  /* Slate intermediate shades */
+  --color-slate-150: oklch(94.85% .010 260);
+  --color-slate-155: oklch(94.8% .010 260);
+  --color-slate-450: oklch(64.2% .018 254.9);
+  --color-slate-550: oklch(54.2% .018 253.1);
+  --color-slate-650: oklch(46.5% .017 253.0);
+  --color-slate-805: oklch(34.2% .011 254.1);
+
+  /* ── Custom Scale ── */
+  --scale-102: 1.02;
+
+  /* ── Custom Animations ── */
+  --animate-fadeIn: fadeIn 0.3s ease-out;
+  --animate-scaleUp: scaleUp 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* ── Global Base ── */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
