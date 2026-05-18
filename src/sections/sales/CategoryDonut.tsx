@@ -1,5 +1,5 @@
 import { PieChart } from 'lucide-react';
-import type { CategoryPoint } from './AnalyticsSection';
+import type { CategoryPoint } from './SalesSection';
 
 interface Props {
   data: CategoryPoint[];

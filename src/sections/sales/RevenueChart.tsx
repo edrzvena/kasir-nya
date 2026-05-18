@@ -1,5 +1,5 @@
 import { BarChart2 } from 'lucide-react';
-import type { ChartPoint } from './AnalyticsSection';
+import type { ChartPoint } from './SalesSection';
 
 interface Props {
   data: ChartPoint[];

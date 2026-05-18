@@ -1,5 +1,5 @@
 import { Trophy, Package } from 'lucide-react';
-import type { TopProductRow } from './AnalyticsSection';
+import type { TopProductRow } from './SalesSection';
 
 interface Props {
   data: TopProductRow[];
