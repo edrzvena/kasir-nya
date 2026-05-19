@@ -29,7 +29,7 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
 
   if (!transaction) {
     return (
-      <div className="w-full lg:w-80 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-center items-center text-slate-400 text-center h-[400px]">
+      <div className="w-full lg:w-80 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-center items-center text-slate-400 text-center sticky top-16 h-[calc(100vh-4rem)] self-start">
         <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
           <Receipt className="h-7 w-7 text-slate-200" />
         </div>
@@ -73,8 +73,8 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
   };
 
   return (
-    <div className="w-full lg:w-80 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative h-fit sticky top-28">
-      
+    <div className="w-full lg:w-80 bg-white border border-slate-100 rounded-3xl shadow-sm flex flex-col relative sticky top-16 h-[calc(100vh-4rem)] self-start">
+
       {/* Close button */}
       <button 
         onClick={onClose}
@@ -83,8 +83,8 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
         <X className="h-4 w-4" />
       </button>
 
-      {/* Main receipt body */}
-      <div>
+      {/* Main receipt body — scrollable */}
+      <div className="flex-1 overflow-y-auto p-6 pb-2">
         <h3 className="font-bold text-slate-800 text-xs tracking-wider uppercase mb-5 flex items-center gap-2">
           <Receipt className="h-4 w-4 text-indigo-500" />
           Struk Pembayaran
@@ -141,6 +141,11 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
                 <span className="block text-[8px] text-slate-400 font-medium">
                   {item.quantity}x @ Rp {new Intl.NumberFormat('id-ID').format(item.price)}
                 </span>
+                {item.note && (
+                  <span className="block text-[8px] text-slate-400 italic">
+                    <span className="font-semibold not-italic text-slate-400">Catatan:</span> {item.note}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -205,52 +210,71 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="mt-6">
+      {/* Action Buttons — always pinned to bottom */}
+      <div className="shrink-0 px-6 pb-6 pt-4 border-t border-slate-50">
         <button 
           onClick={() => {
-            // Print receipt using browser print
-            const printContent = document.querySelector('[data-receipt]');
-            if (printContent) {
-              const printWindow = window.open('', '_blank');
-              if (printWindow) {
-                printWindow.document.write(`
-                  <html><head><title>Struk - ${transaction.order_id}</title>
-                  <style>body{font-family:monospace;font-size:11px;padding:20px;max-width:300px;margin:0 auto}</style>
-                  </head><body>
-                  <div style="text-align:center;font-weight:bold;font-size:14px;margin-bottom:8px">${storeName.toUpperCase()}</div>
-                  <div style="text-align:center;font-size:9px;color:#888;margin-bottom:12px">STRUK PEMBAYARAN</div>
-                  <hr style="border:none;border-top:1px dashed #ccc">
-                  <div style="margin:8px 0;font-size:10px">
-                    <div>No: ${transaction.order_id}</div>
-                    <div>Tanggal: ${formatShortDate(transaction.created_at)}</div>
-                    <div>Customer: ${transaction.customer_name}</div>
-                    <div>Bayar: ${transaction.payment_method}</div>
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+              printWindow.document.write(`
+                <html><head><title>Struk - ${transaction.order_id}</title>
+                <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body { font-family: monospace; font-size: 11px; padding: 24px 20px; max-width: 300px; margin: 0 auto; color: #333; }
+                  .center { text-align: center; }
+                  .store-name { font-size: 15px; font-weight: 800; letter-spacing: 1px; }
+                  .subtitle { font-size: 8px; color: #999; letter-spacing: 2px; margin-top: 3px; }
+                  hr { border: none; border-top: 1px dashed #ccc; margin: 10px 0; }
+                  hr.solid { border-top: 1px solid #555; }
+                  .row { display: flex; justify-content: space-between; margin: 3px 0; }
+                  .label { color: #888; }
+                  .item-name { font-weight: 600; }
+                  .item-sub { font-size: 9px; color: #999; margin: 1px 0 2px; }
+                  .item-note { font-size: 9px; color: #888; font-style: italic; margin-bottom: 4px; }
+                  .item-note span { font-style: normal; font-weight: 600; }
+                  .total-row { font-size: 14px; font-weight: 800; margin: 6px 0; }
+                  .status { display: inline-block; border: 1.5px solid #333; padding: 3px 12px; font-size: 10px; font-weight: 800; letter-spacing: 2px; margin: 8px 0; }
+                  .footer { font-size: 8px; color: #aaa; margin-top: 6px; }
+                  @media print { body { padding: 0; } }
+                </style>
+                </head><body>
+                <div class="center" style="margin-bottom:12px">
+                  <div class="store-name">${storeName.toUpperCase()}</div>
+                  <div class="subtitle">STRUK RESMI PEMBAYARAN</div>
+                </div>
+                <hr>
+                <div style="margin:8px 0">
+                  <div class="row"><span class="label">No. Invoice</span><span style="font-weight:700">${transaction.order_id}</span></div>
+                  <div class="row"><span class="label">Tanggal</span><span>${formatShortDate(transaction.created_at)}</span></div>
+                  <div class="row"><span class="label">Customer</span><span style="font-weight:700">${transaction.customer_name}</span></div>
+                  <div class="row"><span class="label">Pembayaran</span><span style="font-weight:700">${transaction.payment_method}</span></div>
+                </div>
+                <hr>
+                <div style="font-size:8px;color:#aaa;font-weight:700;letter-spacing:1px;margin-bottom:6px">DETAIL PESANAN</div>
+                ${transaction.items.map(item => `
+                  <div class="row item-name">
+                    <span>${item.name}</span>
+                    <span>Rp ${new Intl.NumberFormat('id-ID').format(item.price * item.quantity)}</span>
                   </div>
-                  <hr style="border:none;border-top:1px dashed #ccc">
-                  ${transaction.items.map(item => `
-                    <div style="display:flex;justify-content:space-between;margin:4px 0">
-                      <span>${item.name}</span>
-                      <span>Rp ${new Intl.NumberFormat('id-ID').format(item.price * item.quantity)}</span>
-                    </div>
-                    <div style="font-size:9px;color:#888">${item.quantity}x @ Rp ${new Intl.NumberFormat('id-ID').format(item.price)}</div>
-                  `).join('')}
-                  <hr style="border:none;border-top:1px dashed #ccc">
-                  <div style="display:flex;justify-content:space-between;margin:4px 0"><span>Subtotal</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(subtotal))}</span></div>
-                  <div style="display:flex;justify-content:space-between;margin:4px 0"><span>PPN 10%</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(taxAmount))}</span></div>
-                  <hr style="border:none;border-top:1px solid #333">
-                  <div style="display:flex;justify-content:space-between;margin:8px 0;font-weight:bold;font-size:13px"><span>TOTAL</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(grandTotal))}</span></div>
-                  <hr style="border:none;border-top:1px dashed #ccc">
-                  <div style="text-align:center;margin-top:12px;font-size:9px;color:#888">
-                    <div>STATUS: ${transaction.status === 'Success' ? 'LUNAS' : transaction.status.toUpperCase()}</div>
-                    <div style="margin-top:8px">Terima kasih atas kunjungan Anda!</div>
-                    <div style="font-size:8px;color:#bbb;margin-top:4px">Powered by Kasir-Nya POS</div>
-                  </div>
-                  </body></html>
-                `);
-                printWindow.document.close();
-                printWindow.print();
-              }
+                  <div class="item-sub">${item.quantity}x @ Rp ${new Intl.NumberFormat('id-ID').format(item.price)}</div>
+                  ${item.note ? `<div class="item-note"><span>Catatan:</span> ${item.note}</div>` : ''}
+                `).join('')}
+                <hr>
+                <div class="row"><span class="label">Subtotal</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(subtotal))}</span></div>
+                <div class="row"><span class="label">PPN (10%)</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(taxAmount))}</span></div>
+                <hr class="solid">
+                <div class="row total-row"><span>TOTAL</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(grandTotal))}</span></div>
+                <hr>
+                <div class="center" style="margin-top:10px">
+                  <div class="status">${transaction.status === 'Success' ? 'LUNAS' : transaction.status.toUpperCase()}</div>
+                  <div class="footer" style="margin-top:8px">${formatDate(transaction.created_at)}</div>
+                  <div class="footer" style="margin-top:4px">Terima kasih atas kunjungan Anda!</div>
+                  <div class="footer" style="margin-top:2px">Powered by Kasir-Nya POS</div>
+                </div>
+                </body></html>
+              `);
+              printWindow.document.close();
+              printWindow.print();
             }
           }}
           className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-xs cursor-pointer transition-all shadow-sm"

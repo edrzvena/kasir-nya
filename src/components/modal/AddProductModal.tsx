@@ -7,7 +7,7 @@ import Modal from '../ui/Modal';
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (product: import('../../lib/db').Product) => void;
   storeId: number;
   categories?: Category[];
 }
@@ -18,7 +18,6 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, storeId, c
   const [newProductName, setNewProductName] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductCategory, setNewProductCategory] = useState(categories.length > 0 ? categories[0].name : '');
-  const [newProductDesc, setNewProductDesc] = useState('');
   const [newProductQty, setNewProductQty] = useState('20');
 
   // Image handling
@@ -35,7 +34,6 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, storeId, c
   const resetForm = () => {
     setNewProductName('');
     setNewProductPrice('');
-    setNewProductDesc('');
     setNewProductQty('20');
     setNewProductCategory(categories.length > 0 ? categories[0].name : '');
     setImageUrl('');
@@ -118,9 +116,9 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, storeId, c
       const finalImageUrl = imageUrl || getCategoryDefaultImage(newProductCategory);
       const effectiveCategory = newProductCategory || (categories.length > 0 ? categories[0].name : 'Umum');
 
-      await dbService.addProduct({
+      const newProduct = await dbService.addProduct({
         name: newProductName,
-        description: newProductDesc || 'Fresh handcrafted artisan selection.',
+        description: '',
         price: priceNum,
         image_url: finalImageUrl,
         category: effectiveCategory,
@@ -129,7 +127,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, storeId, c
       }, storeId);
 
       resetForm();
-      onSuccess();
+      onSuccess(newProduct);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Gagal menyimpan produk. Coba lagi.');
     } finally {
@@ -298,24 +296,12 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, storeId, c
           >
             {categories.length > 0 ? (
               categories.map((cat) => (
-                <option key={cat.id} value={cat.name}>{cat.emoji} {cat.name}</option>
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
               ))
             ) : (
-              <option value="Umum">📦 Umum</option>
+              <option value="Umum">Umum</option>
             )}
           </select>
-        </div>
-
-        {/* DESCRIPTION */}
-        <div>
-          <label className="text-[9px] font-bold text-slate-400 tracking-wider uppercase block mb-1.5">Description</label>
-          <textarea
-            rows={2}
-            placeholder="Flavor notes, custom organic syrups, extracts, etc."
-            value={newProductDesc}
-            onChange={(e) => setNewProductDesc(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-150 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
-          />
         </div>
 
         {/* ERROR MESSAGE */}

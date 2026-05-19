@@ -116,9 +116,6 @@ export default function ProductGrid({
 
                   {/* Text details */}
                   <h3 className="font-extrabold text-slate-800 text-sm mt-3 leading-snug">{p.name}</h3>
-                  <p className="text-slate-400 text-[10px] font-semibold mt-1 leading-relaxed line-clamp-2 h-7">
-                    {p.description}
-                  </p>
                 </div>
 
                 {/* Footer price */}

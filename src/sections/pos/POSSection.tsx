@@ -16,6 +16,7 @@ interface POSSectionProps {
 interface CartItem {
   product: Product;
   quantity: number;
+  note?: string;
 }
 
 export default function POSSection({ storeId, refreshTrigger, triggerRefresh, currentUser }: POSSectionProps) {
@@ -90,6 +91,12 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
+  const handleUpdateCartNote = (productId: string, note: string) => {
+    setCart(prev => prev.map(item =>
+      item.product.id === productId ? { ...item, note } : item
+    ));
+  };
+
   // Cart total sum
   const totalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
@@ -102,7 +109,6 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
     const transactionPayload = {
       order_id: invoiceNo,
       customer_name: customerName.trim(),
-      customer_email: '',
       cashier_name: currentUser.name || (currentUser.role === 'admin' ? 'Admin' : currentUser.email),
       total_amount: totalAmount + (totalAmount * 0.1), // 10% PPN tax included
       payment_method: paymentMethod,
@@ -113,20 +119,21 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
         price: item.product.price,
         quantity: item.quantity,
         category: item.product.category,
+        ...(item.note?.trim() ? { note: item.note.trim() } : {}),
       }))
     };
 
     // Create checkout transaction
     const newTx = await dbService.createTransaction(transactionPayload, storeId);
-    
-    // Decrement inventory stocks
-    for (const item of cart) {
-      const remainingStock = item.product.stock_quantity - item.quantity;
-      await dbService.updateProductStock(item.product.id, remainingStock, storeId);
-    }
 
-    // Trigger state success
-    setLastTransaction(newTx);
+    // Decrement inventory stocks — paralel, bukan sequential
+    await Promise.all(cart.map(item =>
+      dbService.updateProductStock(item.product.id, item.product.stock_quantity - item.quantity, storeId)
+    ));
+
+    // Trigger state success — pakai items dari payload lokal agar note/catatan tetap ada
+    // (Supabase bisa return items tanpa field tambahan tergantung schema)
+    setLastTransaction({ ...newTx, items: transactionPayload.items });
     setIsSuccessOpen(true);
     setCart([]);
     setCustomerName('');
@@ -137,7 +144,7 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
     <div className="flex flex-col lg:flex-row gap-8 animate-fadeIn">
       
       {/* Product Grid Area (Left Panel) */}
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 space-y-6 py-8">
         <div className="flex justify-between items-center shrink-0">
           <div>
             <h2 className="font-extrabold text-slate-800 text-xl leading-none">Kasir POS</h2>
@@ -157,10 +164,11 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
       </div>
 
       {/* Cart Drawer Billing Panel (Right Panel) */}
-      <CartDrawer 
+      <CartDrawer
         cart={cart}
         onUpdateQty={handleUpdateCartQty}
         onRemove={handleRemoveFromCart}
+        onUpdateNote={handleUpdateCartNote}
         selectedCustomerName={customerName}
         setSelectedCustomerName={setCustomerName}
         paymentMethod={paymentMethod}

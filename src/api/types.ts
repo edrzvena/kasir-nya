@@ -39,6 +39,7 @@ export interface Transaction {
     price: number;
     quantity: number;
     category?: string;
+    note?: string;
   }>;
   store_id: number;
 }

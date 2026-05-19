@@ -139,8 +139,8 @@ export default function MainLayout({ currentUser, onLogout }: MainLayoutProps) {
           avatarUrl={avatarUrl}
         />
 
-        {/* Content Wrapper */}
-        <div className="p-8 flex-1 overflow-hidden flex flex-col justify-between">
+        {/* Content Wrapper — POS & Invoices skip vertical padding so sidebars fill full height */}
+        <div className={`${activeTab === 'pos' || activeTab === 'invoices' ? 'px-8' : 'p-8'} flex-1 overflow-x-hidden flex flex-col justify-between`}>
 
           {/* Active page views */}
           <div className="flex-1">
@@ -148,7 +148,7 @@ export default function MainLayout({ currentUser, onLogout }: MainLayoutProps) {
           </div>
 
           {/* Standalone Footer */}
-          <Footer />
+          {activeTab !== 'pos' && activeTab !== 'invoices' && <Footer />}
 
         </div>
       </main>

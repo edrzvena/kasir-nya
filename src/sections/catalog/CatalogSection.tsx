@@ -63,11 +63,14 @@ export default function CatalogSection({ storeId, refreshTrigger, triggerRefresh
     });
   }, [products, searchQuery, activeCategory]);
 
-  // Adjust stock count instantly
-  const handleStockChange = async (productId: string, newStock: number) => {
+  const handleStockChange = (productId: string, newStock: number) => {
     if (newStock < 0) return;
-    await dbService.updateProductStock(productId, newStock, storeId);
-    triggerRefresh();
+    const stockStatus = newStock === 0 ? 'Out of Stock' : newStock <= 5 ? 'Low Stock' : 'In Stock';
+    // Optimistic — langsung update UI, tulis ke DB di background
+    setProducts(prev => prev.map(p =>
+      p.id === productId ? { ...p, stock_quantity: newStock, stock_status: stockStatus } : p
+    ));
+    dbService.updateProductStock(productId, newStock, storeId);
   };
 
   const handleEditClick = (product: Product) => {
@@ -75,10 +78,11 @@ export default function CatalogSection({ storeId, refreshTrigger, triggerRefresh
     setIsEditOpen(true);
   };
 
-  const handleDeleteClick = async (productId: string) => {
+  const handleDeleteClick = (productId: string) => {
     if (confirm("Yakin ingin menghapus produk ini dari katalog? Tindakan ini tidak dapat dibatalkan.")) {
-      await dbService.deleteProduct(productId, storeId);
-      triggerRefresh();
+      // Optimistic — langsung hilang dari UI, hapus di DB di background
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      dbService.deleteProduct(productId, storeId);
     }
   };
 
@@ -236,16 +240,15 @@ export default function CatalogSection({ storeId, refreshTrigger, triggerRefresh
         <AddProductModal
           isOpen={isAddOpen}
           onClose={() => setIsAddOpen(false)}
-          onSuccess={() => {
+          onSuccess={(newProduct) => {
+            setProducts(prev => [newProduct, ...prev]);
             setIsAddOpen(false);
-            triggerRefresh();
           }}
           storeId={storeId}
           categories={categories}
         />
       )}
 
-      {/* EDIT MODAL DIALOG — mount fresh with the selected product */}
       {isEditOpen && selectedProduct && (
         <EditProductModal
           isOpen={isEditOpen}
@@ -253,10 +256,10 @@ export default function CatalogSection({ storeId, refreshTrigger, triggerRefresh
             setIsEditOpen(false);
             setSelectedProduct(null);
           }}
-          onSuccess={() => {
+          onSuccess={(updated) => {
+            setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
             setIsEditOpen(false);
             setSelectedProduct(null);
-            triggerRefresh();
           }}
           product={selectedProduct}
           storeId={storeId}

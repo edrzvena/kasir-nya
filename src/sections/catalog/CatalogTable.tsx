@@ -80,7 +80,6 @@ export default function CatalogTable({
                       <TableImage src={p.image_url} alt={p.name} />
                       <div>
                         <span className="text-xs font-bold text-slate-800 block leading-tight">{p.name}</span>
-                        <span className="text-[10px] text-slate-400 font-medium block mt-1 line-clamp-1 max-w-[200px]">{p.description}</span>
                       </div>
                     </div>
                   </td>

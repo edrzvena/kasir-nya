@@ -7,7 +7,7 @@ import Modal from '../ui/Modal';
 interface EditProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (product: import('../../lib/db').Product) => void;
   product: Product | null;
   storeId: number;
   categories?: Category[];
@@ -127,7 +127,7 @@ export default function EditProductModal({
       const qtyNum = parseInt(qty) || 0;
       const status = qtyNum === 0 ? 'Out of Stock' : qtyNum <= 5 ? 'Low Stock' : 'In Stock';
 
-      await dbService.updateProduct(product.id, {
+      const updated = await dbService.updateProduct(product.id, {
         name,
         description: desc,
         price: priceNum,
@@ -137,7 +137,7 @@ export default function EditProductModal({
         stock_quantity: qtyNum
       }, storeId);
 
-      onSuccess();
+      onSuccess(updated);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Gagal menyimpan perubahan. Coba lagi.');
     } finally {

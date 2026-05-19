@@ -33,10 +33,10 @@ export default function InvoicesSection({ storeId, refreshTrigger, setActiveTab 
   const currentTransaction = transactions.find(t => t.id === selectedTxId) || null;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 animate-fadeIn pb-12">
+    <div className="flex flex-col lg:flex-row gap-8 animate-fadeIn">
 
       {/* Table grid directory (Left Side) */}
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 space-y-6 py-8">
         <div>
           <h2 className="font-extrabold text-slate-800 text-xl leading-none">Transactions & Invoices</h2>
           <p className="text-slate-400 text-xs mt-1.5 font-medium">Verify sales history, billing statuses, and printed receipt logs.</p>

@@ -9,75 +9,14 @@ interface CategoryManagerProps {
   onRefresh: () => void;
 }
 
-const EMOJI_OPTIONS = ['☕', '🍵', '🥗', '🥐', '🍔', '🍕', '🍜', '🍰', '📚', '👕', '🎮', '💄', '🔧', '📱', '🎨', '🏠', '🧸', '🎁', '💊', '🌿'];
-
-/** Small self-contained emoji picker that opens on click, closes on outside click */
-function EmojiPicker({
-  value,
-  onChange,
-  size = 'md',
-}: {
-  value: string;
-  onChange: (em: string) => void;
-  size?: 'sm' | 'md';
-}) {
-  const [open, setOpen] = useState(false);
-
-  const btnCls = size === 'sm'
-    ? 'h-8 w-8 text-sm'
-    : 'h-10 w-10 text-lg';
-
-  return (
-    <div className="relative shrink-0">
-      {/* Trigger button */}
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className={`${btnCls} bg-white border ${open ? 'border-violet-400 ring-2 ring-violet-200' : 'border-slate-200 hover:border-violet-300'} rounded-lg flex items-center justify-center cursor-pointer transition-all`}
-      >
-        {value}
-      </button>
-
-      {/* Invisible backdrop — closes picker on outside click */}
-      {open && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* Picker dropdown */}
-      {open && (
-        <div className="absolute top-full left-0 mt-1.5 bg-white border border-slate-200 rounded-xl p-2 shadow-xl z-20 grid grid-cols-5 gap-1 w-[184px] animate-scaleUp">
-          {EMOJI_OPTIONS.map((em) => (
-            <button
-              key={em}
-              type="button"
-              onClick={() => { onChange(em); setOpen(false); }}
-              className={`h-8 w-8 rounded-lg flex items-center justify-center text-sm cursor-pointer transition-all hover:bg-violet-50 hover:scale-110 ${
-                value === em ? 'bg-violet-100 ring-2 ring-violet-300' : ''
-              }`}
-            >
-              {em}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function CategoryManager({ categories, storeId, onRefresh }: CategoryManagerProps) {
-  // Local copy for optimistic updates — syncs from props when parent refreshes
   const [localCats, setLocalCats] = useState<Category[]>(categories);
   useEffect(() => { setLocalCats(categories); }, [categories]);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newEmoji, setNewEmoji] = useState('📦');
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editEmoji, setEditEmoji] = useState('');
   const [catError, setCatError] = useState('');
 
   const sorted = (cats: Category[]) =>
@@ -91,12 +30,11 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
     }
     setCatError('');
     try {
-      const added = await dbService.addCategory({ name: newName.trim(), emoji: newEmoji }, storeId);
-      setLocalCats(prev => sorted([...prev, added])); // immediate UI update
+      const added = await dbService.addCategory({ name: newName.trim(), emoji: '' }, storeId);
+      setLocalCats(prev => sorted([...prev, added]));
       setNewName('');
-      setNewEmoji('📦');
       setIsAdding(false);
-      onRefresh(); // background sync for other components
+      onRefresh();
     } catch (err) {
       setCatError(err instanceof Error ? err.message : 'Gagal menyimpan kategori.');
     }
@@ -110,9 +48,9 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
     }
     setCatError('');
     try {
-      await dbService.updateCategory(id, { name: editName.trim(), emoji: editEmoji }, storeId);
+      await dbService.updateCategory(id, { name: editName.trim(), emoji: '' }, storeId);
       setLocalCats(prev => sorted(prev.map(c =>
-        c.id === id ? { ...c, name: editName.trim(), emoji: editEmoji } : c
+        c.id === id ? { ...c, name: editName.trim() } : c
       )));
       setEditId(null);
       onRefresh();
@@ -136,7 +74,6 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
   const startEdit = (cat: Category) => {
     setEditId(cat.id);
     setEditName(cat.name);
-    setEditEmoji(cat.emoji);
   };
 
   return (
@@ -165,10 +102,8 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
 
       {/* Add New Category Form */}
       {isAdding && (
-        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-3 space-y-2.5 animate-fadeIn">
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-3 animate-fadeIn">
           <div className="flex gap-2">
-            <EmojiPicker value={newEmoji} onChange={setNewEmoji} size="md" />
-
             <input
               type="text"
               value={newName}
@@ -178,17 +113,16 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 placeholder:text-slate-300"
             />
-
             <button
               onClick={handleAdd}
               disabled={!newName.trim()}
-              className="h-10 w-10 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-lg flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              className="h-9 w-9 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-lg flex items-center justify-center cursor-pointer transition-colors shrink-0"
             >
               <Check className="h-4 w-4" />
             </button>
             <button
               onClick={() => { setIsAdding(false); setNewName(''); }}
-              className="h-10 w-10 bg-white border border-slate-200 hover:bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              className="h-9 w-9 bg-white border border-slate-200 hover:bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center cursor-pointer transition-colors shrink-0"
             >
               <X className="h-4 w-4" />
             </button>
@@ -223,7 +157,6 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
             >
               {editId === cat.id ? (
                 <>
-                  <EmojiPicker value={editEmoji} onChange={setEditEmoji} size="sm" />
                   <input
                     type="text"
                     value={editName}
@@ -241,7 +174,9 @@ export default function CategoryManager({ categories, storeId, onRefresh }: Cate
                 </>
               ) : (
                 <>
-                  <span className="h-8 w-8 bg-slate-50 rounded-lg flex items-center justify-center text-sm shrink-0">{cat.emoji}</span>
+                  <div className="h-7 w-7 bg-violet-50 rounded-lg flex items-center justify-center shrink-0">
+                    <Tag className="h-3.5 w-3.5 text-violet-400" />
+                  </div>
                   <span className="flex-1 text-xs font-bold text-slate-700 truncate">{cat.name}</span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button

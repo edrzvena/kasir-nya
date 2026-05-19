@@ -17,12 +17,6 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, avatarUrl
 
   const initials = displayName.charAt(0).toUpperCase();
 
-  const defaultAvatar = currentUser.store_id === 1
-    ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop'
-    : currentUser.store_id === 2
-      ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop'
-      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop';
-
   const roleName = isCashier ? 'POS Cashier' : 'Store Administrator';
 
   return (
@@ -38,20 +32,20 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, avatarUrl
           className="flex items-center gap-3 cursor-pointer group shrink-0"
           title="Lihat profil"
         >
-          {/* Avatar: initials for cashier, photo for admin */}
+          {/* Avatar: foto kalau ada, inisial kalau tidak */}
           <div className="h-10 w-10 rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 flex-shrink-0">
-            {isCashier
+            {avatarUrl
               ? (
-                <div className="h-full w-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-extrabold text-sm">
-                  {initials}
-                </div>
-              )
-              : (
                 <img
-                  src={avatarUrl || defaultAvatar}
+                  src={avatarUrl}
                   alt={displayName}
                   className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
                 />
+              )
+              : (
+                <div className="h-full w-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-extrabold text-sm">
+                  {initials}
+                </div>
               )
             }
           </div>

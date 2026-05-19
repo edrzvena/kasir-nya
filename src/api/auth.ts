@@ -69,11 +69,7 @@ export const authService = {
       if (error) throw error;
       if (!data.user) throw new Error('Failed to establish account.');
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ id: data.user.id, email, role: 'admin', store_id: 1 }]);
-      if (profileError) throw profileError;
-
+      // Profile row dibuat otomatis oleh DB trigger on_auth_user_created
       return { id: data.user.id, email, role: 'admin', store_id: 1 };
     }
 

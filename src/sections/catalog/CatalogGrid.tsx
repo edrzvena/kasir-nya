@@ -81,9 +81,7 @@ function ProductCard({ product, onStockChange, onEditClick, onDeleteClick, categ
 
       {/* Product Info */}
       <div className="p-4 flex-1 flex flex-col">
-        {/* Title & Description */}
-        <h3 className="text-sm font-extrabold text-slate-800 leading-tight mb-1 line-clamp-1">{product.name}</h3>
-        <p className="text-[11px] text-slate-400 font-medium leading-relaxed line-clamp-2 mb-3">{product.description}</p>
+        <h3 className="text-sm font-extrabold text-slate-800 leading-tight mb-3 line-clamp-1">{product.name}</h3>
 
         {/* Price */}
         <div className="mb-3 mt-auto">

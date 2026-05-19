@@ -141,7 +141,6 @@ export default function InvoicesTable({
                         </div>
                         <div>
                           <span className="text-xs font-bold text-slate-800 block leading-tight">{tx.customer_name}</span>
-                          <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">{tx.customer_email || 'guest@mail.com'}</span>
                         </div>
                       </div>
                     </td>

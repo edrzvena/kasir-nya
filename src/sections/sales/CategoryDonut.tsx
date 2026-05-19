@@ -18,7 +18,7 @@ export default function CategoryDonut({ data, totalOrders }: Props) {
     let cum = 0;
     const parts = data.map(cat => {
       const start = cum;
-      const end   = cum + cat.pct;
+      const end = cum + cat.pct;
       cum = end;
       return `${cat.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
     });
