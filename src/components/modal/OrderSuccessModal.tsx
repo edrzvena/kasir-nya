@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Check, Printer, X } from 'lucide-react';
+import { authService } from '../../lib/db';
 import type { Transaction } from '../../lib/db';
 import Modal from '../ui/Modal';
 
@@ -6,80 +8,117 @@ interface OrderSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
+  storeId: number;
 }
 
-export default function OrderSuccessModal({ isOpen, onClose, transaction }: OrderSuccessModalProps) {
+export default function OrderSuccessModal({ isOpen, onClose, transaction, storeId }: OrderSuccessModalProps) {
+  const [storeName, setStoreName] = useState('Kasir-Nya Store');
+
+  useEffect(() => {
+    const fetchStoreName = async () => {
+      try {
+        const store = await authService.getStoreById(storeId);
+        if (store) setStoreName(store.name);
+      } catch (err) {
+        console.error('Failed to fetch store name:', err);
+      }
+    };
+    if (storeId) fetchStoreName();
+  }, [storeId]);
+
   if (!transaction) return null;
 
+  const grandTotal = Number(transaction.total_amount);
+  const subtotal = grandTotal / 1.11;
+  const taxAmount = grandTotal - subtotal;
+
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    return date.toLocaleString('id-ID', {
+      day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  };
+
+  const formatShortDate = (isoString?: string) => {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    return date.toLocaleString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  };
+
   const handlePrint = () => {
-    const subtotal = transaction.total_amount / 1.1;
-    const ppn = transaction.total_amount - subtotal;
-    const fmt = (n: number) => new Intl.NumberFormat('id-ID').format(Math.round(n));
-    const dateStr = transaction.created_at
-      ? new Date(transaction.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
-      : new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
-
-    const itemsHtml = (transaction.items ?? []).map(item => `
-      <tr>
-        <td style="padding:3px 2px;vertical-align:top">
-          ${item.name}${item.note ? `<br><span style="color:#888;font-size:10px">${item.note}</span>` : ''}
-        </td>
-        <td style="padding:3px 2px;text-align:center;white-space:nowrap">×${item.quantity}</td>
-        <td style="padding:3px 2px;text-align:right;white-space:nowrap">Rp ${fmt(item.price * item.quantity)}</td>
-      </tr>`).join('');
-
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Struk ${transaction.order_id}</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Courier New',monospace;font-size:12px;width:280px;margin:0 auto;padding:16px 8px}
-    .center{text-align:center}
-    .divider{border-top:1px dashed #000;margin:8px 0}
-    table{width:100%;border-collapse:collapse}
-    .grand td{font-size:14px;font-weight:700;border-top:1px solid #000;padding-top:6px}
-    @media print{@page{margin:0;size:80mm auto}body{padding:8px 4px}}
-  </style>
-</head>
-<body>
-  <div class="center">
-    <div style="font-size:18px;font-weight:700;letter-spacing:3px">KASIR-NYA</div>
-    <div style="font-size:10px;color:#666;margin-top:2px">Point of Sale System</div>
-  </div>
-  <div class="divider"></div>
-  <table>
-    <tr><td>Invoice</td><td style="text-align:right;font-weight:700">${transaction.order_id}</td></tr>
-    <tr><td>Tanggal</td><td style="text-align:right">${dateStr}</td></tr>
-    <tr><td>Customer</td><td style="text-align:right">${transaction.customer_name}</td></tr>
-    ${transaction.cashier_name ? `<tr><td>Kasir</td><td style="text-align:right">${transaction.cashier_name}</td></tr>` : ''}
-    <tr><td>Pembayaran</td><td style="text-align:right;font-weight:700">${transaction.payment_method}</td></tr>
-  </table>
-  <div class="divider"></div>
-  <table>${itemsHtml}</table>
-  <div class="divider"></div>
-  <table>
-    <tr><td style="padding:2px">Subtotal</td><td style="padding:2px;text-align:right">Rp ${fmt(subtotal)}</td></tr>
-    <tr><td style="padding:2px">PPN (10%)</td><td style="padding:2px;text-align:right">Rp ${fmt(ppn)}</td></tr>
-    <tr class="grand"><td style="padding:6px 2px 2px">TOTAL</td><td style="padding:6px 2px 2px;text-align:right">Rp ${fmt(transaction.total_amount)}</td></tr>
-  </table>
-  <div class="divider"></div>
-  <div class="center" style="margin-top:10px;font-size:11px">
-    <div>Terima kasih sudah berbelanja!</div>
-    <div style="color:#888;font-size:10px;margin-top:4px">Simpan struk ini sebagai bukti pembayaran</div>
-  </div>
-  <script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
-</body>
-</html>`;
-
-    const win = window.open('', '_blank', 'width=420,height=650');
-    if (!win) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
       alert('Pop-up diblokir browser. Izinkan pop-up untuk mencetak struk.');
       return;
     }
-    win.document.write(html);
-    win.document.close();
+
+    const fmt = (n: number) => new Intl.NumberFormat('id-ID').format(Math.round(n));
+
+    printWindow.document.write(`
+      <html><head><title>Struk - ${transaction.order_id}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: monospace; font-size: 11px; padding: 24px 20px; max-width: 300px; margin: 0 auto; color: #333; }
+        .center { text-align: center; }
+        .store-name { font-size: 15px; font-weight: 800; letter-spacing: 1px; }
+        .subtitle { font-size: 8px; color: #999; letter-spacing: 2px; margin-top: 3px; }
+        hr { border: none; border-top: 1px dashed #ccc; margin: 10px 0; }
+        hr.solid { border-top: 1px solid #555; }
+        .row { display: flex; justify-content: space-between; margin: 3px 0; }
+        .label { color: #888; }
+        .item-name { font-weight: 600; }
+        .item-sub { font-size: 9px; color: #999; margin: 1px 0 2px; }
+        .item-note { font-size: 9px; color: #888; font-style: italic; margin-bottom: 4px; }
+        .item-note span { font-style: normal; font-weight: 600; }
+        .total-row { font-size: 14px; font-weight: 800; margin: 6px 0; }
+        .status { display: inline-block; border: 1.5px solid #333; padding: 3px 12px; font-size: 10px; font-weight: 800; letter-spacing: 2px; margin: 8px 0; }
+        .footer { font-size: 8px; color: #aaa; margin-top: 6px; }
+        @media print { body { padding: 0; } }
+      </style>
+      </head><body>
+      <div class="center" style="margin-bottom:12px">
+        <div class="store-name">${storeName.toUpperCase()}</div>
+        <div class="subtitle">STRUK RESMI PEMBAYARAN</div>
+      </div>
+      <hr>
+      <div style="margin:8px 0">
+        <div class="row"><span class="label">No. Invoice</span><span style="font-weight:700">${transaction.order_id}</span></div>
+        <div class="row"><span class="label">Tanggal</span><span>${formatShortDate(transaction.created_at)}</span></div>
+        <div class="row"><span class="label">Customer</span><span style="font-weight:700">${transaction.customer_name}</span></div>
+        ${transaction.cashier_name ? `<div class="row"><span class="label">Kasir</span><span style="font-weight:700">${transaction.cashier_name}</span></div>` : ''}
+        <div class="row"><span class="label">Pembayaran</span><span style="font-weight:700">${transaction.payment_method}</span></div>
+      </div>
+      <hr>
+      <div style="font-size:8px;color:#aaa;font-weight:700;letter-spacing:1px;margin-bottom:6px">DETAIL PESANAN</div>
+      ${(transaction.items ?? []).map(item => `
+        <div class="row item-name">
+          <span>${item.name}</span>
+          <span>Rp ${fmt(item.price * item.quantity)}</span>
+        </div>
+        <div class="item-sub">${item.quantity}x @ Rp ${fmt(item.price)}</div>
+        ${item.note ? `<div class="item-note"><span>Catatan:</span> ${item.note}</div>` : ''}
+      `).join('')}
+      <hr>
+      <div class="row"><span class="label">Subtotal</span><span>Rp ${fmt(subtotal)}</span></div>
+      <div class="row"><span class="label">PPN (11%)</span><span>Rp ${fmt(taxAmount)}</span></div>
+      <hr class="solid">
+      <div class="row total-row"><span>TOTAL</span><span>Rp ${fmt(grandTotal)}</span></div>
+      <hr>
+      <div class="center" style="margin-top:10px">
+        <div class="status">${transaction.status === 'Success' ? 'LUNAS' : transaction.status.toUpperCase()}</div>
+        <div class="footer" style="margin-top:8px">${formatDate(transaction.created_at)}</div>
+        <div class="footer" style="margin-top:4px">Terima kasih atas kunjungan Anda!</div>
+        <div class="footer" style="margin-top:2px">Powered by Kasir-Nya POS</div>
+      </div>
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
     onClose();
   };
 
@@ -107,8 +146,16 @@ export default function OrderSuccessModal({ isOpen, onClose, transaction }: Orde
             <span className="font-bold text-slate-700">{transaction.customer_name}</span>
           </div>
           <div className="flex justify-between font-semibold text-slate-500">
+            <span>Subtotal</span>
+            <span className="font-semibold text-slate-600">Rp {new Intl.NumberFormat('id-ID').format(Math.round(subtotal))}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-slate-500">
+            <span>PPN (11%)</span>
+            <span className="font-semibold text-slate-600">Rp {new Intl.NumberFormat('id-ID').format(Math.round(taxAmount))}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-slate-500 pt-2 border-t border-slate-200">
             <span>Total Paid</span>
-            <span className="font-bold text-slate-800">Rp {new Intl.NumberFormat('id-ID').format(transaction.total_amount)}</span>
+            <span className="font-extrabold text-slate-800">Rp {new Intl.NumberFormat('id-ID').format(Math.round(grandTotal))}</span>
           </div>
           <div className="flex justify-between font-semibold text-slate-500">
             <span>Payment Method</span>

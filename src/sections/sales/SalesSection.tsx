@@ -295,13 +295,13 @@ export default function SalesSection({ storeId, refreshTrigger }: Props) {
     const headers = [
       'Nama Store', 'No. Order', 'Tanggal & Waktu', 'Nama Customer',
       'Kasir', 'Metode Pembayaran', 'Nama Produk', 'Kategori', 'Harga Satuan',
-      'Qty', 'Subtotal', 'PPN (10%)', 'Total Pesanan'
+      'Qty', 'Subtotal', 'PPN (11%)', 'Total Pesanan'
     ];
 
     const rows: string[][] = [];
     filteredTx.forEach(tx => {
       const subtotalBeforeTax = tx.items.reduce((s, it) => s + it.price * it.quantity, 0);
-      const ppn = subtotalBeforeTax * 0.1;
+      const ppn = subtotalBeforeTax * 0.11;
       const datetime = tx.created_at ? fmtDate(tx.created_at) : '';
 
       tx.items.forEach(item => {

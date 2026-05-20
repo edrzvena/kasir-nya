@@ -18,11 +18,8 @@ const fmtDate = (iso: string) => {
 };
 
 const METHOD_STYLES: Record<string, string> = {
-  Cash:        'bg-emerald-50 text-emerald-600 border-emerald-200',
-  QRIS:        'bg-violet-50  text-violet-600  border-violet-200',
-  Debit:       'bg-sky-50     text-sky-600     border-sky-200',
-  Credit:      'bg-amber-50   text-amber-600   border-amber-200',
-  'Credit Card': 'bg-amber-50 text-amber-600   border-amber-200',
+  Cash: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  QRIS: 'bg-violet-50  text-violet-600  border-violet-200',
 };
 
 export default function SalesTable({ transactions }: Props) {
@@ -64,14 +61,14 @@ export default function SalesTable({ transactions }: Props) {
                 <th className="px-4 py-3">Metode</th>
                 <th className="px-4 py-3">Item</th>
                 <th className="px-4 py-3">Kategori</th>
-                <th className="px-4 py-3">PPN (10%)</th>
+                <th className="px-4 py-3">PPN (11%)</th>
                 <th className="px-6 py-3">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {transactions.map((tx) => {
                 const subtotalBeforeTax = tx.items.reduce((s, it) => s + it.price * it.quantity, 0);
-                const ppn = subtotalBeforeTax * 0.1;
+                const ppn = subtotalBeforeTax * 0.11;
                 const methodStyle = METHOD_STYLES[tx.payment_method] ?? 'bg-slate-50 text-slate-500 border-slate-200';
                 const dt = tx.created_at ? fmtDate(tx.created_at) : { date: '—', time: '' };
 

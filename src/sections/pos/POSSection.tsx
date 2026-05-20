@@ -110,7 +110,7 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
       order_id: invoiceNo,
       customer_name: customerName.trim(),
       cashier_name: currentUser.name || (currentUser.role === 'admin' ? 'Admin' : currentUser.email),
-      total_amount: totalAmount + (totalAmount * 0.1), // 10% PPN tax included
+      total_amount: totalAmount + (totalAmount * 0.11), // 11% PPN tax included
       payment_method: paymentMethod,
       status: 'Success',
       store_id: storeId,
@@ -178,10 +178,11 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
       />
 
       {/* MODAL: ORDER SUCCESS POPUP */}
-      <OrderSuccessModal 
+      <OrderSuccessModal
         isOpen={isSuccessOpen}
         onClose={() => setIsSuccessOpen(false)}
         transaction={lastTransaction}
+        storeId={storeId}
       />
 
     </div>

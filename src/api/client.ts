@@ -90,7 +90,7 @@ const defaultTransactions: Transaction[] = [
   {
     id: 'b1-t1', order_id: '#ORD-8821', customer_name: 'John Simmons',
     customer_email: 'john.simmons@email.com', total_amount: 124.50,
-    payment_method: 'Credit Card', status: 'Success',
+    payment_method: 'Cash', status: 'Success',
     created_at: '2026-05-17T14:30:00.000Z',
     items: [
       { name: 'Espresso Roast', price: 12.40, quantity: 2 },

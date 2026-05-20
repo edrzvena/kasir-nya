@@ -39,7 +39,7 @@ export default function CartDrawer({
   const toggleNote = (id: string) => setOpenNotes(prev => ({ ...prev, [id]: !prev[id] }));
   const isNoteVisible = (item: CartItem) => openNotes[item.product.id] || !!item.note?.trim();
 
-  const serviceTax = totalAmount * 0.1;
+  const serviceTax = totalAmount * 0.11;
   const grandTotal = totalAmount + serviceTax;
 
   const paymentOptions = [
@@ -208,7 +208,7 @@ export default function CartDrawer({
             <span>Rp {new Intl.NumberFormat('id-ID').format(totalAmount)}</span>
           </div>
           <div className="flex justify-between text-[10px] font-semibold text-slate-500">
-            <span>PPN (10%)</span>
+            <span>PPN (11%)</span>
             <span>Rp {new Intl.NumberFormat('id-ID').format(Math.round(serviceTax))}</span>
           </div>
           <div className="flex justify-between text-xs font-extrabold text-slate-800 pt-1.5 border-t border-slate-100">

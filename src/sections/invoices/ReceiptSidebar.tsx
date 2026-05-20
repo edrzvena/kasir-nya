@@ -43,7 +43,7 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
 
   // Tax calculations
   const grandTotal = Number(transaction.total_amount);
-  const subtotal = grandTotal / 1.1;
+  const subtotal = grandTotal / 1.11;
   const taxAmount = grandTotal - subtotal;
 
   const formatDate = (isoString?: string) => {
@@ -160,7 +160,7 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
               <span>Rp {new Intl.NumberFormat('id-ID').format(Math.round(subtotal))}</span>
             </div>
             <div className="flex justify-between text-slate-500">
-              <span>PPN (10%)</span>
+              <span>PPN (11%)</span>
               <span>Rp {new Intl.NumberFormat('id-ID').format(Math.round(taxAmount))}</span>
             </div>
             <div className="border-t border-slate-200 pt-1.5" />
@@ -261,7 +261,7 @@ export default function ReceiptSidebar({ transaction, onClose, storeId }: Receip
                 `).join('')}
                 <hr>
                 <div class="row"><span class="label">Subtotal</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(subtotal))}</span></div>
-                <div class="row"><span class="label">PPN (10%)</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(taxAmount))}</span></div>
+                <div class="row"><span class="label">PPN (11%)</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(taxAmount))}</span></div>
                 <hr class="solid">
                 <div class="row total-row"><span>TOTAL</span><span>Rp ${new Intl.NumberFormat('id-ID').format(Math.round(grandTotal))}</span></div>
                 <hr>
