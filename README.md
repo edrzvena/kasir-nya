@@ -49,7 +49,7 @@ Dibangun dengan React 19, TypeScript, Tailwind v4, dan Supabase. Bisa langsung j
 ## ✨ Fitur Utama
 
 ### 🛒 POS Cashier
-Cart real-time, search produk, pilih kategori, input nama pelanggan, pilih metode bayar (**Cash / QRIS**), checkout langsung cetak struk. Stok produk auto-decrement.
+Cart real-time, search produk, pilih kategori, input nama pelanggan, catatan per item, pilih metode bayar (**Cash / QRIS**), checkout langsung cetak struk thermal-style 80mm. Stok produk auto-decrement. Untuk QRIS, modal sukses nampilin mockup QR code.
 
 ### 📦 Catalog Management
 CRUD produk lengkap (nama, harga, kategori, stok, deskripsi) + manajemen kategori dengan **emoji picker**. Optimistic UI — UI update duluan, sinkron ke DB di background.
@@ -59,10 +59,11 @@ CRUD produk lengkap (nama, harga, kategori, stok, deskripsi) + manajemen kategor
 - KPI cards: total revenue, transaksi, AOV, growth %
 - **Custom date range picker** (tanpa library eksternal)
 - Top produk & breakdown kategori (donut chart)
-- **Export CSV** kompatibel Excel (UTF-8 BOM)
+- Daftar penjualan dengan breakdown subtotal + PPN per transaksi
+- **Export CSV** kompatibel Excel (UTF-8 BOM) — lengkap dengan kolom PPN 11%
 
 ### 🧾 Invoices
-Daftar transaksi historis dengan detail item, total, metode bayar, kasir, dan pelanggan. Bisa cetak ulang struk kapan aja.
+Daftar transaksi historis dengan detail item, total, metode bayar, kasir, dan pelanggan. Bisa cetak ulang struk kapan aja — template-nya identik dengan struk yang keluar saat checkout di POS.
 
 ### 👤 Customer Management
 Stats pelanggan (jumlah kunjungan, total belanja, last visit) otomatis ter-update setelah setiap transaksi.
@@ -219,9 +220,10 @@ src/
 │   └── auth/         # Login, Register, Forgot/Reset Password
 ├── sections/         # Section UI per halaman
 │   ├── pos/          # POSSection, ProductGrid, CartDrawer
-│   ├── catalog/      # CatalogSection, CategoryManager, CatalogTable
-│   ├── sales/        # RevenueChart, KPIOverview, DateRangePicker, ...
-│   ├── invoices/     # InvoicesTable, ReceiptSidebar
+│   ├── catalog/      # CatalogSection, CategoryManager, CatalogGrid, CatalogTable
+│   ├── sales/        # SalesSection, KPIOverview, RevenueChart, CategoryDonut,
+│   │                 #   DateRangePicker, SalesTable, TopProductsTable
+│   ├── invoices/     # InvoicesSection, InvoicesTable, ReceiptSidebar
 │   ├── dashboard/    # StatsGrid, RecentActivity
 │   ├── staff/        # StaffSection
 │   ├── profile/      # ProfileSection
@@ -257,6 +259,12 @@ Update local state langsung dari return value `dbService.addCategory()`, call `o
 
 ### CSV Excel-compatible
 Pake BOM (`﻿`) di prefix biar Excel kebaca UTF-8 dengan benar (penting untuk karakter Bahasa Indonesia & Rupiah).
+
+### Struk pembayaran yang konsisten
+Struk yang dicetak saat checkout (`OrderSuccessModal`) & saat reprint dari Invoices (`ReceiptSidebar`) pakai **HTML template yang identik** — thermal-style 80mm dengan store name, info invoice, detail pesanan, breakdown PPN, status badge (LUNAS/PENDING/REFUND), dan footer. Sekali ubah desain struk, dua entry point langsung sinkron.
+
+### Reverse-calc PPN 11%
+Transaksi disimpan sebagai **grand total** (sudah include PPN), bukan subtotal. Saat tampilin di UI/struk, subtotal di-derive ulang lewat `grandTotal / 1.11`, lalu `ppn = grandTotal - subtotal`. Cara ini menghindari floating-point drift kalau kita simpan subtotal + ppn terpisah.
 
 ---
 
