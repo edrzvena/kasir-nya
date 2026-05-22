@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Store, Hash, Mail, ShieldCheck, ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import { Camera, Store, Mail, ShieldCheck, ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { authService, type UserProfile, type Store as StoreInfo } from '../../lib/db';
 
 interface ProfileSectionProps {
@@ -31,10 +31,9 @@ function resizeImage(file: File, size = 300): Promise<string> {
 }
 
 // ── Shared outlet info card ────────────────────────────────────────────────
-function OutletInfoCard({ storeInfo, storeLoading, storeId }: {
+function OutletInfoCard({ storeInfo, storeLoading }: {
   storeInfo: StoreInfo | null;
   storeLoading: boolean;
-  storeId: number;
 }) {
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
@@ -46,37 +45,13 @@ function OutletInfoCard({ storeInfo, storeLoading, storeId }: {
       </div>
 
       {storeLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
-          ))}
-        </div>
+        <div className="h-12 bg-slate-100 rounded-xl animate-pulse" />
       ) : (
-        <div className="divide-y divide-slate-50">
-          <div className="flex items-center justify-between py-3.5">
-            <span className="text-xs font-semibold text-slate-500">Nama Toko</span>
-            <span className="font-bold text-slate-800 text-sm">
-              {storeInfo?.name ?? <span className="text-slate-400 font-normal italic text-xs">—</span>}
-            </span>
-          </div>
-          <div className="flex items-center justify-between py-3.5">
-            <span className="text-xs font-semibold text-slate-500">Store Code</span>
-            <code className="font-bold text-indigo-600 bg-indigo-50 border border-indigo-100/60 px-2.5 py-0.5 rounded-md text-xs font-mono uppercase tracking-wider">
-              {storeInfo?.code ?? '—'}
-            </code>
-          </div>
-          <div className="flex items-center justify-between py-3.5">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-slate-500">Store ID</span>
-              <span className="text-[9px] text-slate-400 font-medium">(tenant)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Hash className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100/60 px-2.5 py-0.5 rounded-md text-sm font-mono">
-                {storeId}
-              </span>
-            </div>
-          </div>
+        <div className="flex items-center justify-between py-2">
+          <span className="text-xs font-semibold text-slate-500">Nama Toko</span>
+          <span className="font-bold text-slate-800 text-sm">
+            {storeInfo?.name ?? <span className="text-slate-400 font-normal italic text-xs">—</span>}
+          </span>
         </div>
       )}
     </div>
@@ -132,7 +107,7 @@ function CashierProfile({ currentUser }: ProfileSectionProps) {
         </div>
       </div>
 
-      <OutletInfoCard storeInfo={storeInfo} storeLoading={storeLoading} storeId={currentUser.store_id} />
+      <OutletInfoCard storeInfo={storeInfo} storeLoading={storeLoading} />
     </div>
   );
 }
@@ -302,7 +277,7 @@ function AdminProfile({ currentUser, avatarUrl, onAvatarChange }: ProfileSection
         </div>
       </div>
 
-      <OutletInfoCard storeInfo={storeInfo} storeLoading={storeLoading} storeId={currentUser.store_id} />
+      <OutletInfoCard storeInfo={storeInfo} storeLoading={storeLoading} />
     </div>
   );
 }

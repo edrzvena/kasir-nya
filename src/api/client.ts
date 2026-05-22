@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Store, Category, Product, Customer, Transaction } from './types';
+import type { Store, Category, Product, Transaction } from './types';
 
 export const activeStoreId = import.meta.env.VITE_STORE_ID || 'cafeboy';
 
@@ -68,24 +68,6 @@ const defaultProducts: Product[] = [
   }
 ];
 
-const defaultCustomers: Customer[] = [
-  {
-    id: 'b1-c1', name: 'John Simmons', phone: '+1 (555) 012-3456',
-    email: 'john.simmons@email.com', visits: 24, total_spent: 1420.00,
-    last_visit: '2026-05-17T20:30:00.000Z', status: 'Loyal Member', store_id: 1
-  },
-  {
-    id: 'b1-c2', name: 'Maria Lopez', phone: '+1 (555) 987-6543',
-    email: 'maria.l@provider.net', visits: 12, total_spent: 645.50,
-    last_visit: '2026-05-15T18:45:00.000Z', status: 'Regular', store_id: 1
-  },
-  {
-    id: 'g1-c1', name: 'Chloe Dupont', phone: '+1 (555) 789-0123',
-    email: 'chloe.d@pinkmail.com', visits: 32, total_spent: 1845.20,
-    last_visit: '2026-05-17T21:30:00.000Z', status: 'Loyal Member', store_id: 2
-  }
-];
-
 const defaultTransactions: Transaction[] = [
   {
     id: 'b1-t1', order_id: '#ORD-8821', customer_name: 'John Simmons',
@@ -116,7 +98,6 @@ const initializeLocalStorage = () => {
   if (!localStorage.getItem('kasirnya_initialized_relational')) {
     localStorage.setItem('kasirnya_stores',       JSON.stringify(defaultStores));
     localStorage.setItem('kasirnya_products',     JSON.stringify(defaultProducts));
-    localStorage.setItem('kasirnya_customers',    JSON.stringify(defaultCustomers));
     localStorage.setItem('kasirnya_transactions', JSON.stringify(defaultTransactions));
     localStorage.setItem('kasirnya_categories',   JSON.stringify(defaultCategories));
     localStorage.setItem('kasirnya_initialized_relational', 'true');

@@ -1,13 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Download } from 'lucide-react';
+import { Download, LayoutGrid, Package, CreditCard, ListOrdered } from 'lucide-react';
 import { dbService, authService } from '../../lib/db';
-import type { Transaction, Customer, Product } from '../../lib/db';
+import type { Transaction, Product } from '../../lib/db';
 import KPIOverview from './KPIOverview';
 import RevenueChart from './RevenueChart';
 import CategoryDonut from './CategoryDonut';
 import TopProductsTable from './TopProductsTable';
 import SalesTable from './SalesTable';
 import DateRangePicker from './DateRangePicker';
+import PaymentMethodCard from './PaymentMethodCard';
+import PeakHoursChart from './PeakHoursChart';
+import DayOfWeekChart from './DayOfWeekChart';
+import CashierPerformanceTable from './CashierPerformanceTable';
+import PeriodComparison from './PeriodComparison';
+import LowStockAlert from './LowStockAlert';
+
+type SubTab = 'summary' | 'products' | 'operations' | 'transactions';
 
 // ─── Shared Types ──────────────────────────────────────────────────────────
 export interface ChartPoint  { label: string; amount: number; }
@@ -43,6 +51,40 @@ function filterByRange(
   else if (range === '7D')  cutoff = new Date(startOfDay(now).getTime() - 6 * 86_400_000);
   else                       cutoff = new Date(startOfDay(now).getTime() - 29 * 86_400_000);
   return txs.filter(tx => tx.created_at && new Date(tx.created_at) >= cutoff);
+}
+
+/** Get transactions from the period immediately preceding the current one (for growth comparison) */
+function filterPreviousPeriod(
+  txs: Transaction[],
+  range: TimeRange,
+  customFrom?: string,
+  customTo?: string,
+): Transaction[] {
+  if (range === 'Custom') {
+    if (!customFrom || !customTo) return [];
+    const from = new Date(customFrom + 'T00:00:00');
+    const to   = new Date(customTo   + 'T23:59:59');
+    const span = to.getTime() - from.getTime();
+    const prevTo   = new Date(from.getTime() - 1);
+    const prevFrom = new Date(prevTo.getTime() - span);
+    return txs.filter(tx => tx.created_at && new Date(tx.created_at) >= prevFrom && new Date(tx.created_at) <= prevTo);
+  }
+
+  const now = new Date();
+  const todayStart = startOfDay(now).getTime();
+  let prevFrom: Date, prevTo: Date;
+
+  if (range === 'Today') {
+    prevFrom = new Date(todayStart - 86_400_000);
+    prevTo   = new Date(todayStart - 1);
+  } else if (range === '7D') {
+    prevTo   = new Date(todayStart - 6 * 86_400_000 - 1);
+    prevFrom = new Date(prevTo.getTime() - 7 * 86_400_000 + 1);
+  } else {
+    prevTo   = new Date(todayStart - 29 * 86_400_000 - 1);
+    prevFrom = new Date(prevTo.getTime() - 30 * 86_400_000 + 1);
+  }
+  return txs.filter(tx => tx.created_at && new Date(tx.created_at) >= prevFrom && new Date(tx.created_at) <= prevTo);
 }
 
 /** Build bar chart data points for a custom date range */
@@ -235,31 +277,32 @@ interface Props { storeId: number; refreshTrigger: number; }
 
 export default function SalesSection({ storeId, refreshTrigger }: Props) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [customers,    setCustomers]    = useState<Customer[]>([]);
   const [products,     setProducts]     = useState<Product[]>([]);
   const [timeRange,    setTimeRange]    = useState<TimeRange>('7D');
   const [customFrom,   setCustomFrom]   = useState<string>('');
   const [customTo,     setCustomTo]     = useState<string>('');
   const [storeName,    setStoreName]    = useState<string>('');
   const [isExporting,  setIsExporting]  = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('summary');
 
   useEffect(() => {
     Promise.all([
       dbService.getTransactions(storeId),
-      dbService.getCustomers(storeId),
       dbService.getProducts(storeId),
       authService.getStoreById(storeId),
-    ]).then(([txs, custs, prods, store]) => {
+    ]).then(([txs, prods, store]) => {
       setTransactions(txs);
-      setCustomers(custs);
       setProducts(prods);
       if (store) setStoreName(store.name);
     });
   }, [storeId, refreshTrigger]);
 
-  // All derived data — recomputed only when deps change
   const filteredTx   = useMemo(
     () => filterByRange(transactions, timeRange, customFrom, customTo),
+    [transactions, timeRange, customFrom, customTo],
+  );
+  const previousTx   = useMemo(
+    () => filterPreviousPeriod(transactions, timeRange, customFrom, customTo),
     [transactions, timeRange, customFrom, customTo],
   );
   const chartData    = useMemo(
@@ -282,68 +325,26 @@ export default function SalesSection({ storeId, refreshTrigger }: Props) {
     (customFrom && customTo) ? `${fmtDisplayDate(customFrom)} – ${fmtDisplayDate(customTo)}` :
     'Pilih Tanggal';
 
-  const handleDownloadCSV = () => {
+  const handleDownloadExcel = async () => {
     if (filteredTx.length === 0) return;
     setIsExporting(true);
-
-    const fmtDate = (iso: string) => {
-      const d = new Date(iso);
-      const pad = (n: number) => String(n).padStart(2, '0');
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    };
-
-    const headers = [
-      'Nama Store', 'No. Order', 'Tanggal & Waktu', 'Nama Customer',
-      'Kasir', 'Metode Pembayaran', 'Nama Produk', 'Kategori', 'Harga Satuan',
-      'Qty', 'Subtotal', 'PPN (11%)', 'Total Pesanan'
-    ];
-
-    const rows: string[][] = [];
-    filteredTx.forEach(tx => {
-      const subtotalBeforeTax = tx.items.reduce((s, it) => s + it.price * it.quantity, 0);
-      const ppn = subtotalBeforeTax * 0.11;
-      const datetime = tx.created_at ? fmtDate(tx.created_at) : '';
-
-      tx.items.forEach(item => {
-        const itemSubtotal = item.price * item.quantity;
-        rows.push([
-          storeName,
-          tx.order_id,
-          datetime,
-          tx.customer_name,
-          tx.cashier_name || '—',
-          tx.payment_method,
-          item.name,
-          item.category || '—',
-          String(item.price),
-          String(item.quantity),
-          String(itemSubtotal),
-          String(Math.round(ppn)),
-          String(Math.round(tx.total_amount)),
-        ]);
+    try {
+      const { exportSalesReport } = await import('./exportExcel');
+      await exportSalesReport({
+        storeName,
+        rangeLabel,
+        transactions: filteredTx,
+        products,
+        topProducts,
+        categoryData,
       });
-    });
-
-    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const csv = [
-      headers.map(escape).join(','),
-      ...rows.map(r => r.map(escape).join(','))
-    ].join('\r\n');
-
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const fileLabel = timeRange === 'Custom' && customFrom && customTo
-      ? `${customFrom}_sd_${customTo}`
-      : rangeLabel.replace(/\s+/g, '-').toLowerCase();
-    a.download = `laporan-penjualan-${fileLabel}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setIsExporting(false);
+    } catch (err) {
+      console.error('Gagal export laporan Excel:', err);
+    } finally {
+      setIsExporting(false);
+    }
   };
+
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
@@ -359,14 +360,13 @@ export default function SalesSection({ storeId, refreshTrigger }: Props) {
 
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-3">
-            {/* Download CSV */}
             <button
-              onClick={handleDownloadCSV}
+              onClick={handleDownloadExcel}
               disabled={filteredTx.length === 0 || isExporting || (timeRange === 'Custom' && (!customFrom || !customTo))}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 border border-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm shadow-emerald-200"
             >
               <Download className="h-3.5 w-3.5" />
-              {isExporting ? 'Mengunduh...' : 'Unduh CSV'}
+              {isExporting ? 'Membuat Laporan...' : 'Unduh Excel'}
             </button>
 
             {/* Time Range Filter */}
@@ -398,24 +398,70 @@ export default function SalesSection({ storeId, refreshTrigger }: Props) {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <KPIOverview transactions={filteredTx} customers={customers} />
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <RevenueChart data={chartData} timeRange={timeRange} />
-        </div>
-        <div>
-          <CategoryDonut data={categoryData} totalOrders={filteredTx.length} />
-        </div>
+      <div className="flex bg-white border border-slate-100 p-1 rounded-2xl text-xs font-bold text-slate-500 shadow-sm overflow-x-auto">
+        {([
+          { id: 'summary', label: 'Ringkasan', icon: LayoutGrid },
+          { id: 'products', label: 'Produk', icon: Package },
+          { id: 'operations', label: 'Operasional', icon: CreditCard },
+          { id: 'transactions', label: 'Transaksi', icon: ListOrdered },
+        ] as const).map(t => {
+          const Icon = t.icon;
+          const isActive = activeSubTab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveSubTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-300/30 font-extrabold'
+                  : 'hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Top Products */}
-      <TopProductsTable data={topProducts} />
+      {activeSubTab === 'summary' && (
+        <div className="space-y-6 animate-fadeIn">
+          <KPIOverview transactions={filteredTx} />
+          <PeriodComparison currentPeriod={filteredTx} previousPeriod={previousTx} rangeLabel={rangeLabel} />
+          <RevenueChart data={chartData} timeRange={timeRange} />
+        </div>
+      )}
 
-      {/* Sales Transaction List */}
-      <SalesTable transactions={filteredTx} />
+      {activeSubTab === 'products' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <TopProductsTable data={topProducts} />
+            </div>
+            <div>
+              <CategoryDonut data={categoryData} totalOrders={filteredTx.length} />
+            </div>
+          </div>
+          <LowStockAlert products={products} />
+        </div>
+      )}
+
+      {activeSubTab === 'operations' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PaymentMethodCard transactions={filteredTx} />
+            <PeakHoursChart transactions={filteredTx} />
+          </div>
+          <DayOfWeekChart transactions={filteredTx} />
+          <CashierPerformanceTable transactions={filteredTx} />
+        </div>
+      )}
+
+      {activeSubTab === 'transactions' && (
+        <div className="animate-fadeIn">
+          <SalesTable transactions={filteredTx} />
+        </div>
+      )}
 
     </div>
   );

@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { fromCache, toCache, bustCache } from './cache';
+import { fromCache, toCache } from './cache';
 import type { UserProfile, Store, Cashier } from './types';
 
 export const authService = {
@@ -20,7 +20,7 @@ export const authService = {
         .insert([{ name: capitalizedName + ' Suite', code: formattedCode }])
         .select('id').single();
 
-      if (insertError || !newStore) throw new Error(insertError?.message || 'Failed to initialize store credentials.');
+      if (insertError || !newStore) throw new Error(insertError?.message || 'Gagal inisialisasi data toko.');
       return Number(newStore.id);
     }
 
@@ -63,91 +63,59 @@ export const authService = {
     }
   },
 
-  async signUpAdmin(email: string, password: string): Promise<UserProfile> {
-    if (supabase) {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      if (!data.user) throw new Error('Failed to establish account.');
-
-      // Profile row dibuat otomatis oleh DB trigger on_auth_user_created
-      return { id: data.user.id, email, role: 'admin', store_id: 1 };
-    }
-
-    const profiles: UserProfile[] = JSON.parse(localStorage.getItem('kasirnya_profiles') || '[]');
-    if (profiles.some(p => p.email === email)) throw new Error('Email already registered.');
-
-    const newProfile: UserProfile = {
-      id: 'usr-' + Math.random().toString(36).substr(2, 9),
-      email, role: 'admin', store_id: 1
-    };
-    profiles.push(newProfile);
-    localStorage.setItem('kasirnya_profiles', JSON.stringify(profiles));
-    localStorage.setItem('kasirnya_current_user', JSON.stringify(newProfile));
-    return newProfile;
-  },
-
   async signIn(email: string, password: string): Promise<UserProfile> {
-    if (supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      if (!data.user) throw new Error('Login failed.');
+    const cleanEmail = email.trim().toLowerCase();
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles').select('*').eq('id', data.user.id).single();
-      if (profileError || !profile) {
-        throw new Error('User profile role not configured in public.profiles table.');
+    if (supabase) {
+      const adminAttempt = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+
+      if (!adminAttempt.error && adminAttempt.data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles').select('*').eq('id', adminAttempt.data.user.id).single();
+        if (profileError || !profile) {
+          throw new Error('Profil pengguna belum dikonfigurasi.');
+        }
+        return {
+          id: profile.id, email: profile.email,
+          role: profile.role, store_id: Number(profile.store_id)
+        };
       }
 
-      return {
-        id: profile.id, email: profile.email,
-        role: profile.role, store_id: Number(profile.store_id)
-      };
+      const { data: cashier } = await supabase
+        .from('cashiers').select('*')
+        .ilike('email', cleanEmail).eq('password', password).maybeSingle();
+
+      if (cashier) {
+        const sessionUser: UserProfile = {
+          id: cashier.id, email: cashier.email,
+          role: 'cashier', store_id: Number(cashier.store_id), name: cashier.name
+        };
+        localStorage.setItem('kasirnya_current_user', JSON.stringify(sessionUser));
+        return sessionUser;
+      }
+
+      throw new Error('Email atau kata sandi salah.');
     }
 
     const profiles: UserProfile[] = JSON.parse(localStorage.getItem('kasirnya_profiles') || '[]');
-    const matched = profiles.find(p => p.email === email);
-    if (!matched) throw new Error('Invalid email or password.');
-    localStorage.setItem('kasirnya_current_user', JSON.stringify(matched));
-    return matched;
-  },
-
-  async createCashier(username: string, name: string, pin: string, storeId: number): Promise<Cashier> {
-    const cleanUsername = username.trim().toLowerCase().replace(/\s+/g, '');
-
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('cashiers')
-        .insert([{ username: cleanUsername, name, pin, store_id: storeId }])
-        .select().single();
-
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error('This username is already taken by another store employee. Please choose a unique username.');
-        }
-        console.error('Supabase createCashier error, falling back to LocalStorage', error);
-      } else if (data) {
-        bustCache(`cashiers_${storeId}`);
-        return { ...data, store_id: Number(data.store_id) } as Cashier;
-      }
+    const matchedAdmin = profiles.find(p => p.email === cleanEmail);
+    if (matchedAdmin) {
+      localStorage.setItem('kasirnya_current_user', JSON.stringify(matchedAdmin));
+      return matchedAdmin;
     }
 
     const cashiers: Cashier[] = JSON.parse(localStorage.getItem('kasirnya_cashiers') || '[]');
-    if (cashiers.some(c => c.username === cleanUsername)) {
-      throw new Error('This username is already taken. Please choose a unique username.');
-    }
-    if (cashiers.some(c => c.store_id === storeId && c.pin === pin)) {
-      throw new Error('This PIN is already registered for this store.');
+    const matchedCashier = cashiers.find(c => c.email?.toLowerCase() === cleanEmail && c.password === password);
+    if (matchedCashier) {
+      const sessionUser: UserProfile = {
+        id: matchedCashier.id, email: matchedCashier.email,
+        role: 'cashier', store_id: matchedCashier.store_id, name: matchedCashier.name
+      };
+      localStorage.setItem('kasirnya_current_user', JSON.stringify(sessionUser));
+      return sessionUser;
     }
 
-    const newCashier: Cashier = {
-      id: 'csh-' + Math.random().toString(36).substr(2, 9),
-      username: cleanUsername, name, pin, store_id: storeId,
-      created_at: new Date().toISOString()
-    };
-    cashiers.push(newCashier);
-    localStorage.setItem('kasirnya_cashiers', JSON.stringify(cashiers));
-    bustCache(`cashiers_${storeId}`);
-    return newCashier;
+    throw new Error('Email atau kata sandi salah.');
   },
 
   async getCurrentSession(): Promise<UserProfile | null> {
@@ -196,48 +164,6 @@ export const authService = {
     return result;
   },
 
-  async signInCashier(adminEmail: string, username: string, pin: string): Promise<UserProfile> {
-    const cleanUsername = username.trim().toLowerCase();
-    const cleanAdminEmail = adminEmail.trim().toLowerCase();
-
-    if (supabase) {
-      const { data: adminProfile, error: adminError } = await supabase
-        .from('profiles').select('store_id, email')
-        .eq('email', cleanAdminEmail).eq('role', 'admin').single();
-      if (adminError || !adminProfile) throw new Error('Store Admin email is not registered.');
-
-      const { data: cashier, error: cashierError } = await supabase
-        .from('cashiers').select('*')
-        .eq('store_id', adminProfile.store_id)
-        .ilike('username', cleanUsername).eq('pin', pin).single();
-      if (cashierError || !cashier) throw new Error('Invalid Username or PIN code for this outlet.');
-
-      const sessionUser: UserProfile = {
-        id: cashier.id, email: adminProfile.email,
-        role: 'cashier', store_id: Number(adminProfile.store_id), name: cashier.name
-      };
-      localStorage.setItem('kasirnya_current_user', JSON.stringify(sessionUser));
-      return sessionUser;
-    }
-
-    const profiles: UserProfile[] = JSON.parse(localStorage.getItem('kasirnya_profiles') || '[]');
-    const adminProfile = profiles.find(p => p.email === cleanAdminEmail && p.role === 'admin');
-    if (!adminProfile) throw new Error('Store Admin email is not registered.');
-
-    const cashiers: Cashier[] = JSON.parse(localStorage.getItem('kasirnya_cashiers') || '[]');
-    const cashier = cashiers.find(
-      c => c.store_id === adminProfile.store_id && c.username === cleanUsername && c.pin === pin
-    );
-    if (!cashier) throw new Error('Invalid Username or PIN code for this outlet.');
-
-    const sessionUser: UserProfile = {
-      id: cashier.id, email: adminProfile.email,
-      role: 'cashier', store_id: adminProfile.store_id, name: cashier.name
-    };
-    localStorage.setItem('kasirnya_current_user', JSON.stringify(sessionUser));
-    return sessionUser;
-  },
-
   async resetPassword(email: string): Promise<void> {
     if (supabase) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -245,7 +171,7 @@ export const authService = {
       });
       if (error) throw error;
     } else {
-      throw new Error('Supabase is not configured. Password recovery requires cloud database.');
+      throw new Error('Supabase belum dikonfigurasi. Reset kata sandi butuh database cloud.');
     }
   },
 
@@ -254,7 +180,7 @@ export const authService = {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
     } else {
-      throw new Error('Supabase is not configured.');
+      throw new Error('Supabase belum dikonfigurasi.');
     }
   }
 };

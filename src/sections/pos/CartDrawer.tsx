@@ -114,14 +114,16 @@ export default function CartDrawer({
                 </div>
               </div>
 
-              {/* Note input */}
               {isNoteVisible(item) && (
                 <input
                   type="text"
                   value={item.note || ''}
-                  onChange={(e) => onUpdateNote(item.product.id, e.target.value)}
-                  placeholder="Catatan... (contoh: less sugar, extra shot)"
-                  className="w-full mt-1.5 bg-indigo-50/60 border border-indigo-100 rounded-lg px-3 py-1.5 text-[10px] font-medium text-indigo-800 placeholder:text-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 focus:border-indigo-300"
+                  onChange={(e) => onUpdateNote(item.product.id, e.target.value.toLowerCase())}
+                  placeholder="catatan..."
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="w-full mt-1.5 bg-indigo-50/60 border border-indigo-100 rounded-lg px-3 py-1.5 text-[10px] font-medium text-indigo-800 placeholder:text-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 focus:border-indigo-300 lowercase"
                 />
               )}
             </div>

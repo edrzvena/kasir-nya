@@ -24,18 +24,21 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Cart & Sales States
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const cartKey = `kasirnya_cart_${storeId}`;
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(cartKey);
+      return raw ? JSON.parse(raw) as CartItem[] : [];
+    } catch { return []; }
+  });
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('QRIS');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  // Modal open states
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
-  // Fetch Products and Categories
   useEffect(() => {
     const fetchData = async () => {
       const [prodData, catData] = await Promise.all([
@@ -48,10 +51,19 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
     fetchData();
   }, [storeId, refreshTrigger]);
 
-  // Reset Cart when store changes
   useEffect(() => {
-    setCart([]);
-  }, [storeId]);
+    try {
+      if (cart.length === 0) localStorage.removeItem(cartKey);
+      else localStorage.setItem(cartKey, JSON.stringify(cart));
+    } catch {}
+  }, [cart, cartKey]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(cartKey);
+      setCart(raw ? JSON.parse(raw) as CartItem[] : []);
+    } catch { setCart([]); }
+  }, [storeId, cartKey]);
 
   // Cart actions
   const handleAddToCart = (product: Product) => {

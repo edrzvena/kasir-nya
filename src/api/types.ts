@@ -11,19 +11,6 @@ export interface Product {
   store_id: number;
 }
 
-export interface Customer {
-  id: string;
-  created_at?: string;
-  name: string;
-  phone: string;
-  email: string;
-  visits: number;
-  total_spent: number;
-  last_visit: string;
-  status: string;
-  store_id: number;
-}
-
 export interface Transaction {
   id: string;
   created_at?: string;
@@ -47,8 +34,8 @@ export interface Transaction {
 export interface Cashier {
   id: string;
   name: string;
-  username: string;
-  pin: string;
+  email: string;
+  password: string;
   store_id: number;
   created_at?: string;
 }

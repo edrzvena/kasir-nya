@@ -1,6 +1,5 @@
 import { supabase } from './client';
 import { fromCache, toCache, bustCache } from './cache';
-import { customerService } from './customers';
 import type { Transaction } from './types';
 
 export const transactionService = {
@@ -45,8 +44,7 @@ export const transactionService = {
       if (error) {
         console.error('Supabase createTransaction error, falling back to LocalStorage', error);
       } else if (data) {
-        bustCache(`transactions_${storeId}`, `customers_${storeId}`);
-        await customerService.syncCustomerStatsAfterSale(transaction.customer_name, transaction.total_amount, storeId);
+        bustCache(`transactions_${storeId}`);
         return { ...data, store_id: Number(data.store_id) } as Transaction;
       }
     }
@@ -54,8 +52,7 @@ export const transactionService = {
     const transactions: Transaction[] = JSON.parse(localStorage.getItem('kasirnya_transactions') || '[]');
     transactions.push(newTransaction);
     localStorage.setItem('kasirnya_transactions', JSON.stringify(transactions));
-    bustCache(`transactions_${storeId}`, `customers_${storeId}`);
-    await customerService.syncCustomerStatsAfterSale(transaction.customer_name, transaction.total_amount, storeId);
+    bustCache(`transactions_${storeId}`);
 
     return newTransaction;
   }

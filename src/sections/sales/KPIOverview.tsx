@@ -1,18 +1,18 @@
-import { Wallet, ShoppingBag, BarChart3, Users } from 'lucide-react';
-import type { Transaction, Customer } from '../../lib/db';
+import { Wallet, ShoppingBag, BarChart3, Package } from 'lucide-react';
+import type { Transaction } from '../../lib/db';
 
 interface Props {
   transactions: Transaction[];
-  customers: Customer[];
 }
 
 const fmtIDR = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-export default function KPIOverview({ transactions, customers }: Props) {
+export default function KPIOverview({ transactions }: Props) {
   const totalRevenue = transactions.reduce((s, tx) => s + Number(tx.total_amount), 0);
   const totalOrders  = transactions.length;
   const avgOrder     = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const totalItems   = transactions.reduce((s, tx) => s + tx.items.reduce((q, i) => q + i.quantity, 0), 0);
 
   const metrics = [
     {
@@ -40,10 +40,10 @@ export default function KPIOverview({ transactions, customers }: Props) {
       light: 'bg-amber-50 text-amber-600',
     },
     {
-      title: 'Total Member',
-      value: customers.length.toLocaleString('id-ID'),
-      sub: 'pelanggan terdaftar',
-      icon: Users,
+      title: 'Total Item Terjual',
+      value: totalItems.toLocaleString('id-ID'),
+      sub: 'unit produk',
+      icon: Package,
       gradient: 'from-rose-500 to-pink-600',
       light: 'bg-rose-50 text-rose-600',
     },

@@ -16,7 +16,7 @@ export default function SignOutModal({ isOpen, onCancel, onConfirm, currentUser,
 
   const displayName = currentUser.name || currentUser.email;
   const roleLabel = currentUser.role === 'admin' ? 'Admin' : 'Kasir';
-  const storeLabel = storeName || `Outlet ${currentUser.store_id}`;
+  const storeLabel = storeName || 'Outlet kamu';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 animate-fadeIn">
