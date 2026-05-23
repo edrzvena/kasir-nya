@@ -51,17 +51,9 @@ export default function MainLayout({ currentUser, onLogout }: MainLayoutProps) {
   const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   useEffect(() => {
-    const isNative = Capacitor.isNativePlatform();
-    if (!isNative) return;
-
+    if (!Capacitor.isNativePlatform()) return;
     ScreenOrientation.lock({ orientation: 'landscape' }).catch(() => {});
-
-    const viewport = document.querySelector('meta[name=viewport]');
-    const original = viewport?.getAttribute('content') ?? 'width=device-width, initial-scale=1.0';
-    viewport?.setAttribute('content', 'width=1280, user-scalable=no');
-
     return () => {
-      viewport?.setAttribute('content', original);
       ScreenOrientation.unlock().catch(() => {});
     };
   }, []);
