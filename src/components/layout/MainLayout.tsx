@@ -56,45 +56,12 @@ export default function MainLayout({ currentUser, onLogout }: MainLayoutProps) {
 
     ScreenOrientation.lock({ orientation: 'landscape' }).catch(() => {});
 
-    const DESIGN_WIDTH = 1280;
-    const DESIGN_HEIGHT = 720;
-
-    const root = document.getElementById('root');
-    if (!root) return;
-
-    const originalBodyBg = document.body.style.backgroundColor;
-    const originalBodyOverflow = document.body.style.overflow;
-    document.body.style.backgroundColor = '#0f172a';
-    document.body.style.overflow = 'hidden';
-
-    const applyScale = () => {
-      const scale = Math.min(
-        window.innerWidth / DESIGN_WIDTH,
-        window.innerHeight / DESIGN_HEIGHT
-      );
-      const offsetX = (window.innerWidth - DESIGN_WIDTH * scale) / 2;
-      const offsetY = (window.innerHeight - DESIGN_HEIGHT * scale) / 2;
-
-      root.style.width = `${DESIGN_WIDTH}px`;
-      root.style.height = `${DESIGN_HEIGHT}px`;
-      root.style.position = 'absolute';
-      root.style.left = `${offsetX}px`;
-      root.style.top = `${offsetY}px`;
-      root.style.transformOrigin = 'top left';
-      root.style.transform = `scale(${scale})`;
-      root.style.overflow = 'hidden';
-    };
-
-    applyScale();
-    window.addEventListener('resize', applyScale);
-    window.addEventListener('orientationchange', applyScale);
+    const viewport = document.querySelector('meta[name=viewport]');
+    const original = viewport?.getAttribute('content') ?? 'width=device-width, initial-scale=1.0';
+    viewport?.setAttribute('content', 'width=1280, user-scalable=no');
 
     return () => {
-      window.removeEventListener('resize', applyScale);
-      window.removeEventListener('orientationchange', applyScale);
-      root.style.cssText = '';
-      document.body.style.backgroundColor = originalBodyBg;
-      document.body.style.overflow = originalBodyOverflow;
+      viewport?.setAttribute('content', original);
       ScreenOrientation.unlock().catch(() => {});
     };
   }, []);
