@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -47,6 +49,24 @@ export default function MainLayout({ currentUser, onLogout }: MainLayoutProps) {
 
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
+
+  useEffect(() => {
+    const viewport = document.querySelector('meta[name=viewport]');
+    const original = viewport?.getAttribute('content') ?? 'width=device-width, initial-scale=1.0';
+    viewport?.setAttribute('content', 'width=1280, initial-scale=1.0');
+
+    const isNative = Capacitor.isNativePlatform();
+    if (isNative) {
+      ScreenOrientation.lock({ orientation: 'landscape' }).catch(() => {});
+    }
+
+    return () => {
+      viewport?.setAttribute('content', original);
+      if (isNative) {
+        ScreenOrientation.unlock().catch(() => {});
+      }
+    };
+  }, []);
 
   const [avatarUrl, setAvatarUrl] = useState<string>(
     () => localStorage.getItem(`kasirnya_avatar_${currentUser.store_id}`) ?? ''
