@@ -31,3 +31,5 @@ dist-ssr
 
 # Claude AI context
 CLAUDE.md
+.claude
+
