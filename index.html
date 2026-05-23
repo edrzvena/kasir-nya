@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        var ua = navigator.userAgent || '';
+        var isAndroidWebView = /; wv\)/.test(ua);
+        var isCapacitor = /Capacitor/i.test(ua) || (typeof window !== 'undefined' && !!window.Capacitor);
+        if (isAndroidWebView || isCapacitor) {
+          var vp = document.querySelector('meta[name=viewport]');
+          if (vp) vp.setAttribute('content', 'width=1280, user-scalable=no, viewport-fit=cover');
+          document.documentElement.setAttribute('data-native', 'true');
+        }
+      })();
+    </script>
     <title>Kasirnya — POS Command Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
