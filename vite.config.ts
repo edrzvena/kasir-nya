@@ -7,4 +7,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    host: true,
+    port: 5173,
+    watch: {
+      usePolling: process.env.VITE_USE_POLLING === 'true',
+    },
+  },
 })

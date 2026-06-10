@@ -1,0 +1,30 @@
+services:
+  # Development — hot reload, akses di http://localhost:5173
+  dev:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - VITE_USE_POLLING=true
+
+  # Production — build + serve via nginx, akses di http://localhost:8080
+  # Jalanin dengan: docker compose --profile prod up --build
+  prod:
+    profiles:
+      - prod
+    build:
+      context: .
+      target: prod
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    ports:
+      - "8080:80"
