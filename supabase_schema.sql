@@ -194,3 +194,42 @@ BEGIN
   RETURN new_cashier_id;
 END;
 $$;
+
+-- =====================================================================
+-- GETTING STARTED — isi sendiri sesuai tokomu
+-- ---------------------------------------------------------------------
+-- Habis jalanin script di atas, DB masih KOSONG (belum ada toko/akun/
+-- produk). Ikutin langkah ini biar bisa langsung login & coba aplikasi.
+-- Uncomment + ganti nilainya, jalanin di SQL Editor.
+--
+--   1) Bikin toko (catat id-nya buat langkah berikutnya):
+-- INSERT INTO public.stores (name, code) VALUES ('Toko Demo', 'demo')
+-- RETURNING id;
+--
+--   2) Bikin akun admin (login default password: admin123):
+--      ganti <STORE_ID> dengan id dari langkah 1.
+-- SELECT public.create_admin('admin@demo.com', <STORE_ID>);
+--
+--   3) (opsional) Bikin akun kasir (login default password: kasir123):
+-- SELECT public.create_cashier('Budi', 'budi@demo.com', <STORE_ID>);
+--
+--   4) (opsional) Isi kategori — store_id = <STORE_ID>:
+-- INSERT INTO public.categories (name, emoji, store_id) VALUES
+--   ('Kopi',    '☕', <STORE_ID>),
+--   ('Non-Kopi','🍵', <STORE_ID>),
+--   ('Makanan', '🍚', <STORE_ID>);
+--
+--   5) (opsional) Isi produk — harga dalam Rupiah (angka polos, tanpa titik):
+-- INSERT INTO public.products
+--   (name, description, price, category, stock_status, stock_quantity, store_id) VALUES
+--   ('Kopi Susu Gula Aren', 'Espresso + susu + gula aren', 22000, 'Kopi', 'In Stock', 50, <STORE_ID>),
+--   ('Americano',           'Espresso + air',             18000, 'Kopi', 'In Stock', 50, <STORE_ID>);
+--
+--   ⚠️ Catatan penting:
+--   - Produk & kategori juga bisa diisi langsung dari menu Catalog di app
+--     (lebih gampang, gak perlu SQL).
+--   - Metode bayar HANYA 'Cash' & 'QRIS' — jangan tambah Debit/Kredit.
+--   - total_amount di transaksi = grand total (sudah termasuk PPN 11%).
+--   - Ganti password default: admin lewat "Lupa kata sandi" di app,
+--     kasir lewat UPDATE public.cashiers SET password='...' WHERE email='...'.
+-- =====================================================================
