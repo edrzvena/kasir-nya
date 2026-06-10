@@ -1,5 +1,5 @@
 export * from './types';
-export { supabase, isSupabaseConfigured, activeStoreId } from './client';
+export { supabase, isSupabaseConfigured } from './client';
 export { authService } from './auth';
 export { productService } from './products';
 export { categoryService } from './categories';

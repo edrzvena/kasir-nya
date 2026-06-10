@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Store, Category, Product, Transaction } from './types';
 
-export const activeStoreId = import.meta.env.VITE_STORE_ID || 'cafeboy';
-
 const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
@@ -104,4 +102,4 @@ const initializeLocalStorage = () => {
   }
 };
 
-initializeLocalStorage();
+if (!isSupabaseConfigured) initializeLocalStorage();
