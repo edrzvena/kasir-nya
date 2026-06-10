@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Download, LayoutGrid, Package, CreditCard, ListOrdered } from 'lucide-react';
 import { dbService, authService } from '../../lib/db';
 import type { Transaction, Product } from '../../lib/db';
+import { useStoreData } from '../../hooks/useStoreData';
 import KPIOverview from './KPIOverview';
 import RevenueChart from './RevenueChart';
 import CategoryDonut from './CategoryDonut';
@@ -276,8 +277,8 @@ function buildTopProducts(txs: Transaction[], products: Product[]): TopProductRo
 interface Props { storeId: number; refreshTrigger: number; }
 
 export default function SalesSection({ storeId, refreshTrigger }: Props) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [products,     setProducts]     = useState<Product[]>([]);
+  const [transactions] = useStoreData<Transaction[]>(dbService.getTransactions, storeId, refreshTrigger, []);
+  const [products]     = useStoreData<Product[]>(dbService.getProducts, storeId, refreshTrigger, []);
   const [timeRange,    setTimeRange]    = useState<TimeRange>('7D');
   const [customFrom,   setCustomFrom]   = useState<string>('');
   const [customTo,     setCustomTo]     = useState<string>('');
@@ -286,13 +287,7 @@ export default function SalesSection({ storeId, refreshTrigger }: Props) {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('summary');
 
   useEffect(() => {
-    Promise.all([
-      dbService.getTransactions(storeId),
-      dbService.getProducts(storeId),
-      authService.getStoreById(storeId),
-    ]).then(([txs, prods, store]) => {
-      setTransactions(txs);
-      setProducts(prods);
+    authService.getStoreById(storeId).then(store => {
       if (store) setStoreName(store.name);
     });
   }, [storeId, refreshTrigger]);

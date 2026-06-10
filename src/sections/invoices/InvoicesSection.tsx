@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { dbService } from '../../lib/db';
 import type { Transaction } from '../../lib/db';
+import { useStoreData } from '../../hooks/useStoreData';
 
 // Import modular sections
 import InvoicesTable from './InvoicesTable';
@@ -13,21 +14,10 @@ interface InvoicesSectionProps {
 }
 
 export default function InvoicesSection({ storeId, refreshTrigger, setActiveTab }: InvoicesSectionProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions] = useStoreData<Transaction[]>(dbService.getTransactions, storeId, refreshTrigger, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusTab, setActiveStatusTab] = useState('All');
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
-
-  // Fetch transactions from DB driver
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      const data = await dbService.getTransactions(storeId);
-      setTransactions(data);
-      // Reset receipt selection on database switch
-      setSelectedTxId(null);
-    };
-    fetchTransactions();
-  }, [storeId, refreshTrigger]);
 
   // Find currently selected transaction record details
   const currentTransaction = transactions.find(t => t.id === selectedTxId) || null;

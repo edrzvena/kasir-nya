@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
 import { Users, ShieldCheck, Info } from 'lucide-react';
-import { authService } from '../../lib/db';
+import { dbService } from '../../lib/db';
 import type { Cashier } from '../../lib/db';
 import Card from '../../components/ui/Card';
+import { useStoreData } from '../../hooks/useStoreData';
 
 interface StaffSectionProps {
   storeId: number;
@@ -10,15 +10,7 @@ interface StaffSectionProps {
 }
 
 export default function StaffSection({ storeId, refreshTrigger }: StaffSectionProps) {
-  const [cashiers, setCashiers] = useState<Cashier[]>([]);
-
-  useEffect(() => {
-    const fetchCashiers = async () => {
-      const list = await authService.getCashiers(storeId);
-      setCashiers(list);
-    };
-    fetchCashiers();
-  }, [storeId, refreshTrigger]);
+  const [cashiers] = useStoreData<Cashier[]>(dbService.getCashiers, storeId, refreshTrigger, []);
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">

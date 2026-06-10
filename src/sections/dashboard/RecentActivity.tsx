@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { History } from 'lucide-react';
 import { dbService } from '../../lib/db';
 import type { Transaction } from '../../lib/db';
+import { useStoreData } from '../../hooks/useStoreData';
 
 interface RecentActivityProps {
   storeId: number;
@@ -9,21 +10,13 @@ interface RecentActivityProps {
 }
 
 export default function RecentActivity({ storeId, refreshTrigger }: RecentActivityProps) {
-  const [txs, setTxs] = useState<Transaction[]>([]);
+  const [allTxs] = useStoreData<Transaction[]>(dbService.getTransactions, storeId, refreshTrigger, []);
 
-  useEffect(() => {
-    const fetchTxs = async () => {
-      const txData = await dbService.getTransactions(storeId);
-      // Sort and take the latest 5 transactions
-      const sorted = [...txData].sort((a, b) => {
-        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return timeB - timeA;
-      }).slice(0, 5);
-      setTxs(sorted);
-    };
-    fetchTxs();
-  }, [storeId, refreshTrigger]);
+  const txs = useMemo(() => [...allTxs].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  }).slice(0, 5), [allTxs]);
 
   const formatIDR = (num: number) => {
     return new Intl.NumberFormat('id-ID', {

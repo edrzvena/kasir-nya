@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
 import { ShoppingBag, Banknote, UserCheck, TrendingUp } from 'lucide-react';
-import { dbService, authService } from '../../lib/db';
+import { dbService } from '../../lib/db';
 import type { Transaction, Cashier } from '../../lib/db';
+import { useStoreData } from '../../hooks/useStoreData';
 
 interface StatsGridProps {
   storeId: number;
@@ -9,20 +9,8 @@ interface StatsGridProps {
 }
 
 export default function StatsGrid({ storeId, refreshTrigger }: StatsGridProps) {
-  const [txs, setTxs] = useState<Transaction[]>([]);
-  const [cashiers, setCashiers] = useState<Cashier[]>([]);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      const [txData, staffData] = await Promise.all([
-        dbService.getTransactions(storeId),
-        authService.getCashiers(storeId),
-      ]);
-      setTxs(txData);
-      setCashiers(staffData);
-    };
-    fetchStats();
-  }, [storeId, refreshTrigger]);
+  const [txs] = useStoreData<Transaction[]>(dbService.getTransactions, storeId, refreshTrigger, []);
+  const [cashiers] = useStoreData<Cashier[]>(dbService.getCashiers, storeId, refreshTrigger, []);
 
   // Sum total income
   const totalIncome = txs.reduce((sum, t) => sum + t.total_amount, 0);

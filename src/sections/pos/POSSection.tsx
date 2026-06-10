@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { dbService } from '../../lib/db';
 import type { Product, Transaction, Category, UserProfile } from '../../lib/db';
+import { useStoreData } from '../../hooks/useStoreData';
 
 import ProductGrid from './ProductGrid';
 import CartDrawer from './CartDrawer';
@@ -21,8 +22,8 @@ interface CartItem {
 
 export default function POSSection({ storeId, refreshTrigger, triggerRefresh, currentUser }: POSSectionProps) {
   // Database States
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [products] = useStoreData<Product[]>(dbService.getProducts, storeId, refreshTrigger, []);
+  const [categories] = useStoreData<Category[]>(dbService.getCategories, storeId, refreshTrigger, []);
 
   const cartKey = `kasirnya_cart_${storeId}`;
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -38,18 +39,6 @@ export default function POSSection({ storeId, refreshTrigger, triggerRefresh, cu
 
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const [prodData, catData] = await Promise.all([
-        dbService.getProducts(storeId),
-        dbService.getCategories(storeId)
-      ]);
-      setProducts(prodData);
-      setCategories(catData);
-    };
-    fetchData();
-  }, [storeId, refreshTrigger]);
 
   useEffect(() => {
     try {

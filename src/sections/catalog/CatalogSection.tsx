@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Package, Plus, LayoutGrid, List, Search, TrendingUp, AlertTriangle, XCircle, ShoppingBag } from 'lucide-react';
 import { dbService } from '../../lib/db';
 import type { Product, Category } from '../../lib/db';
+import { useStoreData } from '../../hooks/useStoreData';
 
 // Import modular sections
 import CatalogGrid from './CatalogGrid';
@@ -17,8 +18,8 @@ interface CatalogSectionProps {
 }
 
 export default function CatalogSection({ storeId, refreshTrigger, triggerRefresh }: CatalogSectionProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useStoreData<Product[]>(dbService.getProducts, storeId, refreshTrigger, []);
+  const [categories] = useStoreData<Category[]>(dbService.getCategories, storeId, refreshTrigger, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -27,19 +28,6 @@ export default function CatalogSection({ storeId, refreshTrigger, triggerRefresh
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-  // Fetch menu products and categories from isolated client base
-  useEffect(() => {
-    const fetchData = async () => {
-      const [prodData, catData] = await Promise.all([
-        dbService.getProducts(storeId),
-        dbService.getCategories(storeId)
-      ]);
-      setProducts(prodData);
-      setCategories(catData);
-    };
-    fetchData();
-  }, [storeId, refreshTrigger]);
 
   // Compute stats from product data
   const stats = useMemo(() => {
