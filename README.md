@@ -1,10 +1,6 @@
-<div align="center">
+# Kasirnya
 
-# 🧾 Kasirnya
-
-**Aplikasi kasir (POS) + dashboard admin untuk cafe & retail Indonesia.**
-
-Dibangun dengan React 19, TypeScript, Tailwind v4, dan Supabase. Bisa langsung jalan dalam **demo mode** tanpa setup database.
+Aplikasi kasir (POS) dan dashboard admin untuk usaha cafe dan retail skala kecil hingga menengah di Indonesia. Dibangun dengan React 19, TypeScript, Tailwind v4, dan Supabase. Aplikasi dapat dijalankan dalam mode demo tanpa perlu menyiapkan database terlebih dahulu.
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -12,292 +8,272 @@ Dibangun dengan React 19, TypeScript, Tailwind v4, dan Supabase. Bisa langsung j
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
 
-</div>
+## Daftar Isi
 
----
+- [Tentang Proyek](#tentang-proyek)
+- [Fitur Utama](#fitur-utama)
+- [Tech Stack](#tech-stack)
+- [Cara Menjalankan](#cara-menjalankan)
+- [Setup Supabase](#setup-supabase)
+- [Alur Penggunaan](#alur-penggunaan)
+- [Role dan Akses](#role-dan-akses)
+- [Struktur Proyek](#struktur-proyek)
+- [Catatan Teknis](#catatan-teknis)
+- [Scripts](#scripts)
+- [Deploy](#deploy)
 
-## 📑 Daftar Isi
+## Tentang Proyek
 
-- [Tentang Proyek](#-tentang-proyek)
-- [Fitur Utama](#-fitur-utama)
-- [Tech Stack](#-tech-stack)
-- [Quick Start](#-quick-start)
-- [Setup Supabase (Opsional)](#-setup-supabase-opsional)
-- [Alur Penggunaan](#-alur-penggunaan)
-- [Role & Akses](#-role--akses)
-- [Struktur Proyek](#-struktur-proyek)
-- [Highlight Teknis](#-highlight-teknis)
-- [Scripts](#-scripts)
-- [Deploy](#-deploy)
+Kasirnya adalah aplikasi web POS yang ditujukan untuk usaha cafe dan retail skala kecil hingga menengah. Aplikasi ini menyasar pemilik usaha yang membutuhkan sistem kasir digital beserta dashboard admin, tanpa harus menyiapkan server sendiri atau berlangganan layanan SaaS berbiaya tinggi.
 
----
+Beberapa karakteristik utamanya:
 
-## 🎯 Tentang Proyek
+- **Dua mode operasi.** Bisa dijalankan dalam mode demo menggunakan localStorage tanpa Supabase, atau mode cloud dengan PostgreSQL untuk produksi.
+- **Multi-store.** Setiap admin memiliki outlet sendiri. Data antar toko terisolasi melalui `store_id`.
+- **Berbasis peran.** Admin memiliki akses penuh, sedangkan kasir hanya dapat mengakses POS dan Invoices.
+- **Cache di sisi klien.** Navigasi antar halaman berlangsung cepat karena hasil query disimpan sementara, dan operasi tulis otomatis membatalkan cache yang relevan.
+- **PPN 11%** dan format Rupiah diterapkan otomatis pada seluruh transaksi.
 
-**Kasirnya** adalah aplikasi web POS (Point of Sale) yang dirancang untuk usaha cafe & retail skala kecil-menengah di Indonesia. Cocok untuk owner yang butuh sistem kasir digital dengan dashboard admin lengkap — tapi tanpa ribet setup server atau langganan SaaS mahal.
+## Fitur Utama
 
-**Yang bikin beda:**
+### POS Cashier
+Keranjang real-time, pencarian produk, filter kategori, input nama pelanggan, catatan per item, pilihan metode bayar (Cash atau QRIS), dan checkout yang langsung mencetak struk thermal 80mm. Stok produk berkurang otomatis setelah transaksi. Untuk pembayaran QRIS, modal sukses menampilkan mockup QR code.
 
-- ⚡ **Dual Mode** — Bisa langsung jalan di **demo mode** (localStorage) tanpa Supabase, atau full **cloud mode** dengan PostgreSQL untuk produksi.
-- 🏪 **Multi-store** — Setiap admin punya outlet sendiri, data antar toko terisolasi otomatis lewat `store_id`.
-- 👥 **Role-based** — Admin akses penuh ke semua fitur; kasir cuma dapat POS & Invoices.
-- 💾 **In-memory cache** — Navigasi antar halaman instan, write op otomatis invalidate cache.
-- 💵 **PPN 11%** & **format Rupiah** otomatis di semua transaksi.
+### Catalog
+Pengelolaan produk lengkap (nama, harga, kategori, stok, deskripsi) beserta manajemen kategori dengan emoji picker. Antarmuka menggunakan pola optimistic update, sehingga tampilan diperbarui lebih dulu sebelum disinkronkan ke database.
 
----
+### Sales Performance
+- Grafik revenue per rentang tanggal
+- Kartu KPI: total revenue, jumlah transaksi, AOV, dan pertumbuhan
+- Pemilih rentang tanggal kustom tanpa library eksternal
+- Produk terlaris dan rincian per kategori
+- Rincian subtotal dan PPN per transaksi
+- Ekspor ke Excel (.xlsx) berformat, terdiri dari tiga sheet (Ringkasan, Detail Transaksi, Per Produk), dibuat dengan `exceljs`
 
-## ✨ Fitur Utama
+### Invoices
+Daftar transaksi beserta detail item, total, metode bayar, kasir, dan pelanggan. Struk dapat dicetak ulang kapan saja menggunakan template yang sama persis dengan struk saat checkout.
 
-### 🛒 POS Cashier
-Cart real-time, search produk, pilih kategori, input nama pelanggan, catatan per item, pilih metode bayar (**Cash / QRIS**), checkout langsung cetak struk thermal-style 80mm. Stok produk auto-decrement. Untuk QRIS, modal sukses nampilin mockup QR code.
+### Manage Staff
+Daftar kasir per outlet, bersifat baca saja. Aplikasi tidak menyediakan pendaftaran mandiri. Akun admin dan kasir dibuat manual melalui helper SQL (lihat bagian [Setup Supabase](#setup-supabase)). Kasir masuk menggunakan email dan kata sandi.
 
-### 📦 Catalog Management
-CRUD produk lengkap (nama, harga, kategori, stok, deskripsi) + manajemen kategori dengan **emoji picker**. Optimistic UI — UI update duluan, sinkron ke DB di background.
+### Multi-tenant
+Setiap admin memiliki `store_id` masing-masing. Kombinasi RLS Supabase dan filter pada lapisan aplikasi memastikan data antar toko tidak saling bocor.
 
-### 📊 Sales Performance
-- Grafik revenue (line chart) per rentang tanggal
-- KPI cards: total revenue, transaksi, AOV, growth %
-- **Custom date range picker** (tanpa library eksternal)
-- Top produk & breakdown kategori (donut chart)
-- Daftar penjualan dengan breakdown subtotal + PPN per transaksi
-- **Export CSV** kompatibel Excel (UTF-8 BOM) — lengkap dengan kolom PPN 11%
+## Tech Stack
 
-### 🧾 Invoices
-Daftar transaksi historis dengan detail item, total, metode bayar, kasir, dan pelanggan. Bisa cetak ulang struk kapan aja — template-nya identik dengan struk yang keluar saat checkout di POS.
-
-### 👤 Customer Management
-Stats pelanggan (jumlah kunjungan, total belanja, last visit) otomatis ter-update setelah setiap transaksi.
-
-### 👔 Manage Staff
-Admin bisa buat akun kasir dengan **username + PIN** per outlet. Kasir login pakai email admin + username + PIN.
-
-### 🏢 Multi-tenant
-Setiap admin punya `store_id` sendiri. RLS Supabase + filter di app layer memastikan data antar toko gak bocor.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Tech |
+| Layer | Teknologi |
 |---|---|
-| **Frontend** | React 19, TypeScript, Vite 8 |
-| **Styling** | Tailwind CSS v4, Plus Jakarta Sans |
-| **Icons** | Lucide React |
-| **Database** | Supabase (PostgreSQL) — cloud mode |
-| **Fallback** | localStorage — demo mode |
-| **Auth** | Supabase Auth + custom PIN flow untuk kasir |
-| **Compiler** | React Compiler (babel-plugin-react-compiler) |
+| Frontend | React 19, TypeScript, Vite 8 |
+| Styling | Tailwind CSS v4, Plus Jakarta Sans |
+| Ikon | Lucide React |
+| Database | Supabase (PostgreSQL) untuk mode cloud |
+| Fallback | localStorage untuk mode demo |
+| Auth | Supabase Auth untuk admin, tabel `cashiers` (email dan kata sandi) untuk kasir, dengan satu form login |
+| Compiler | React Compiler (babel-plugin-react-compiler) |
+| Mobile | Capacitor 7, dibungkus menjadi APK Android |
 
----
+## Cara Menjalankan
 
-## 🚀 Quick Start
+Tersedia dua cara. Pilih salah satu sesuai perangkat yang digunakan.
 
-### 1. Clone & install
+### Cara A: Docker
+
+Cocok bagi yang tidak ingin memasang Node atau npm secara langsung, atau ingin lingkungan yang konsisten di berbagai perangkat. Syaratnya hanya [Docker Desktop](https://www.docker.com/products/docker-desktop/) yang sedang berjalan.
+
+```bash
+git clone https://github.com/your-username/kasir-nya.git
+cd kasir-nya
+docker compose up dev
+```
+
+Buka http://localhost:5173. Hot reload aktif, sehingga perubahan kode pada host langsung tercermin.
+
+Untuk menghentikan, tekan `Ctrl+C` lalu jalankan `docker compose down`. Penjelasan lebih lengkap, termasuk mode production melalui nginx, tersedia di [DOCKER.md](./DOCKER.md).
+
+### Cara B: Node.js
+
+Membutuhkan [Node.js](https://nodejs.org/) versi 20 ke atas (disarankan 22 atau 24).
 
 ```bash
 git clone https://github.com/your-username/kasir-nya.git
 cd kasir-nya
 npm install
-```
-
-### 2. Jalankan dev server
-
-```bash
 npm run dev
 ```
 
-Buka **http://localhost:5173** — selesai. App langsung jalan dalam **demo mode** dengan data sample (dua toko: **Cafe Boy** & **Cafe Girl**).
+Buka http://localhost:5173.
 
-> 💡 Demo mode pakai localStorage. Mau pakai database beneran? Lanjut ke step di bawah.
+Pada kedua cara di atas, aplikasi langsung berjalan dalam mode demo dengan data contoh yang tersimpan di localStorage browser. Untuk menggunakan database sungguhan dengan sinkronisasi lintas perangkat, lanjutkan ke bagian [Setup Supabase](#setup-supabase).
 
----
+## Setup Supabase
 
-## ☁️ Setup Supabase (Opsional)
+Langkah ini hanya diperlukan jika ingin menggunakan database cloud.
 
-Cuma perlu kalau mau pakai cloud database & multi-device sync.
+### 1. Buat project di Supabase
 
-### 1. Bikin project di [supabase.com](https://supabase.com)
+Daftar dan buat project baru di [supabase.com](https://supabase.com).
 
-### 2. Copy kredensial ke `.env`
+### 2. Salin kredensial ke file `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Isi `.env`:
+Isi berkas `.env`:
 
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-> 🔍 Dapetin kredensial dari: **Supabase Dashboard → Settings → API**
+Kredensial dapat diperoleh dari Supabase Dashboard pada menu Settings, lalu API.
 
 ### 3. Jalankan schema SQL
 
-Buka **Supabase SQL Editor**, paste isi file `supabase_schema.sql`, lalu **Run**.
-
-Table yang dibuat:
+Buka SQL Editor di Supabase, tempelkan isi berkas `supabase_schema.sql`, lalu jalankan. Tabel yang dibuat:
 
 ```
-stores · profiles · products · categories
-customers · transactions · cashiers
+stores, profiles, products, categories, transactions, cashiers
 ```
 
-Semua table pakai RLS dengan policy `USING (true)` — isolasi data antar toko dihandle di app layer via `store_id`.
+Seluruh tabel menggunakan RLS dengan policy `USING (true)`. Isolasi data antar toko ditangani pada lapisan aplikasi melalui `store_id`. Berkas schema juga membuat helper function `create_admin()` dan `create_cashier()`.
 
-### 4. Restart dev server
+### 4. Buat akun admin dan kasir
+
+Aplikasi tidak menyediakan pendaftaran mandiri. Akun dibuat manual melalui SQL Editor:
+
+```sql
+SELECT public.create_admin('owner@tokoku.com', 1);            -- kata sandi default: admin123
+SELECT public.create_cashier('Budi', 'budi@tokoku.com', 1);  -- kata sandi default: kasir123
+```
+
+Langkah lengkapnya mengikuti blok komentar GETTING STARTED di bagian bawah `supabase_schema.sql`.
+
+### 5. Jalankan ulang dev server
 
 ```bash
 npm run dev
 ```
 
-App sekarang nyambung ke Supabase. Register akun admin baru di tab **Register**.
+Aplikasi kini terhubung ke Supabase. Masuk menggunakan akun yang baru dibuat.
 
----
+## Alur Penggunaan
 
-## 🎬 Alur Penggunaan
+### Mode Demo
 
-### Mode Demo (langsung pakai)
+Buka aplikasi, lalu langsung gunakan seluruh fitur. Data tersimpan di localStorage browser.
 
-Buka app → otomatis login sebagai admin demo → mainkan semua fitur. Data tersimpan di localStorage browser.
-
-### Mode Cloud (production)
+### Mode Cloud
 
 ```
-1. Register admin baru          → tab "Register"
-2. Login sebagai admin          → tab "Admin"
-3. Tambah produk & kategori     → halaman "Catalog"
-4. Buat akun kasir              → halaman "Manage Staff"
-5. Kasir login                  → tab "Cashier PIN" (email + username + PIN)
+1. Buat akun admin dan kasir melalui helper SQL (lihat Setup Supabase)
+2. Masuk menggunakan email dan kata sandi pada satu form login
+3. Tambahkan produk dan kategori di halaman Catalog
+4. Lihat daftar kasir di halaman Manage Staff (baca saja)
+5. Kasir masuk menggunakan email dan kata sandi
 ```
 
 ### Alur Transaksi
 
 ```
-Login (Admin/Kasir)
-  ↓
-POS Cashier → pilih produk → input nama pelanggan
-  ↓
-Checkout → pilih metode bayar (Cash / QRIS)
-  ↓
-Struk auto-tersimpan di "Invoices"
-  ↓
-Stok produk berkurang otomatis
-  ↓
-Dashboard & Sales Performance ter-update
+Login (admin atau kasir)
+  -> POS Cashier: pilih produk, input nama pelanggan
+  -> Checkout: pilih metode bayar (Cash atau QRIS)
+  -> Struk tersimpan otomatis di Invoices
+  -> Stok produk berkurang otomatis
+  -> Dashboard dan Sales Performance ikut diperbarui
 ```
 
----
+## Role dan Akses
 
-## 🔐 Role & Akses
+| Halaman | Admin | Kasir |
+|---|:---:|:---:|
+| Dashboard | Ya | - |
+| POS Cashier | Ya | Ya |
+| Invoices | Ya | Ya |
+| Catalog | Ya | - |
+| Sales Performance | Ya | - |
+| Manage Staff | Ya | - |
+| Profile | Ya | Ya |
+| Help Center | Ya | Ya |
 
-| Halaman            | Admin | Kasir |
-|--------------------|:-----:|:-----:|
-| Dashboard          |   ✅  |   —   |
-| POS Cashier        |   ✅  |   ✅  |
-| Invoices           |   ✅  |   ✅  |
-| Catalog            |   ✅  |   —   |
-| Sales Performance  |   ✅  |   —   |
-| Manage Staff       |   ✅  |   —   |
-| Profile            |   ✅  |   ✅  |
-| Help Center        |   ✅  |   ✅  |
-
----
-
-## 📁 Struktur Proyek
+## Struktur Proyek
 
 ```
 src/
-├── api/              # Domain service layer (auth, products, categories, dll)
-├── components/
-│   ├── layout/       # Navbar, Sidebar, MainLayout
-│   ├── modal/        # Modal (Add/Edit Product, Sign Out, dll)
-│   └── ui/           # Komponen reusable (Button, Card, Badge, ...)
-├── pages/
-│   ├── admin/        # Dashboard, Catalog, Sales, Staff, Profile
-│   ├── shared/       # POS, Invoices, Help (admin + kasir)
-│   └── auth/         # Login, Register, Forgot/Reset Password
-├── sections/         # Section UI per halaman
-│   ├── pos/          # POSSection, ProductGrid, CartDrawer
-│   ├── catalog/      # CatalogSection, CategoryManager, CatalogGrid, CatalogTable
-│   ├── sales/        # SalesSection, KPIOverview, RevenueChart, CategoryDonut,
-│   │                 #   DateRangePicker, SalesTable, TopProductsTable
-│   ├── invoices/     # InvoicesSection, InvoicesTable, ReceiptSidebar
-│   ├── dashboard/    # StatsGrid, RecentActivity
-│   ├── staff/        # StaffSection
-│   ├── profile/      # ProfileSection
-│   └── help/         # HelpSection
-└── lib/
-    └── db.ts         # Re-export barrel dari src/api/
+  api/              Lapisan service domain (auth, products, categories, dll)
+  components/
+    layout/         Navbar, Sidebar, MainLayout
+    modal/          Modal (Add/Edit Product, Sign Out, dll)
+    ui/             Komponen reusable (Button, Card, Badge, ...)
+  pages/
+    admin/          Dashboard, Catalog, Sales, Staff, Profile
+    shared/         POS, Invoices, Help (admin dan kasir)
+    auth/           Login, Forgot Password, Reset Password
+  sections/         Section UI per halaman
+    pos/            POSSection, ProductGrid, CartDrawer
+    catalog/        CatalogSection, CategoryManager, CatalogGrid, CatalogTable
+    sales/          SalesSection, KPIOverview, RevenueChart, CategoryDonut,
+                    DateRangePicker, SalesTable, TopProductsTable
+    invoices/       InvoicesSection, InvoicesTable, ReceiptSidebar
+    dashboard/      StatsGrid, RecentActivity
+    staff/          StaffSection
+    profile/        ProfileSection
+    help/           HelpSection
+  hooks/            Custom hooks (useStoreData)
+  lib/              Helper (format Rupiah, barrel re-export dari api/)
 ```
 
----
+## Catatan Teknis
 
-## 🧠 Highlight Teknis
+Beberapa pola yang digunakan pada proyek ini.
 
-Beberapa pattern menarik yang dipakai di proyek ini:
+### Cache dengan TTL dan persistensi localStorage
+`src/api/cache.ts` menyediakan helper `fromCache`, `toCache`, dan `bustCache` dengan TTL 10 menit dan persistensi ke localStorage. Setiap getter memeriksa cache terlebih dahulu, sehingga navigasi maupun refresh halaman terasa cepat. Operasi tulis otomatis membatalkan cache yang terkait.
 
-### In-memory cache dengan TTL
-`src/lib/db.ts` punya cache helpers (`fromCache`, `toCache`, `bustCache`) dengan TTL 2 menit. Semua getter cek cache dulu — navigasi antar halaman jadi instan. Write op otomatis invalidate cache.
+### Throw saat Supabase error
+Operasi tulis tidak diam-diam beralih ke localStorage. Jika Supabase mengembalikan error, aplikasi langsung melempar error. Pendekatan ini mencegah data yang seolah tersimpan di lokal tetapi sebenarnya tidak masuk ke database.
 
-### Throw on Supabase error
-Write op gak silent fallback ke localStorage — kalau Supabase error, langsung `throw new Error(error.message)`. Mencegah "data hantu" yang cuma muncul lokal tapi gak masuk DB.
+### Pola refreshTrigger
+Komponen induk menaikkan penghitung integer, lalu komponen anak melakukan fetch ulang melalui `useEffect([storeId, refreshTrigger])`. Pola sederhana untuk menyinkronkan komponen yang bersebelahan. Pola ini dirangkum pada hook `useStoreData`.
 
-### refreshTrigger pattern
-Parent component naikin integer counter → children re-fetch via `useEffect([storeId, refreshTrigger])`. Pattern sederhana buat trigger sync antar component sibling.
-
-### Conditional modal rendering
+### Rendering modal kondisional
 ```tsx
 {isAddOpen && <AddProductModal ... />}
 {isEditOpen && selectedProduct && <EditProductModal ... />}
 ```
-Modal mount fresh setiap dibuka, `useState` initializer jalan dengan data terbaru — fix masalah stale state.
+Modal dipasang ulang setiap kali dibuka, sehingga inisialisasi `useState` selalu menggunakan data terbaru dan terhindar dari masalah stale state.
 
-### Optimistic UI di CategoryManager
-Update local state langsung dari return value `dbService.addCategory()`, call `onRefresh()` cuma buat sync sibling components. UI feels instant.
+### Optimistic update di CategoryManager
+State lokal diperbarui langsung dari nilai kembalian `dbService.addCategory()`, sementara `onRefresh()` dipanggil hanya untuk menyinkronkan komponen lain. Tampilan terasa responsif.
 
-### CSV Excel-compatible
-Pake BOM (`﻿`) di prefix biar Excel kebaca UTF-8 dengan benar (penting untuk karakter Bahasa Indonesia & Rupiah).
+### Ekspor Excel (.xlsx)
+Tombol Unduh Excel pada halaman Sales menghasilkan berkas `.xlsx` berformat menggunakan `exceljs`, yang dimuat secara lazy agar bundle utama tetap ringkas. Berkas menggunakan numFmt asli (`"Rp"#,##0`), auto-filter, dan freeze pane, sehingga data dapat langsung diolah lebih lanjut.
 
-### Struk pembayaran yang konsisten
-Struk yang dicetak saat checkout (`OrderSuccessModal`) & saat reprint dari Invoices (`ReceiptSidebar`) pakai **HTML template yang identik** — thermal-style 80mm dengan store name, info invoice, detail pesanan, breakdown PPN, status badge (LUNAS/PENDING/REFUND), dan footer. Sekali ubah desain struk, dua entry point langsung sinkron.
+### Struk yang konsisten
+Struk yang dicetak saat checkout (`OrderSuccessModal`) dan saat cetak ulang dari Invoices (`ReceiptSidebar`) menggunakan template HTML yang identik, bergaya thermal 80mm. Perubahan desain struk cukup dilakukan satu kali untuk berlaku pada kedua titik cetak.
 
-### Reverse-calc PPN 11%
-Transaksi disimpan sebagai **grand total** (sudah include PPN), bukan subtotal. Saat tampilin di UI/struk, subtotal di-derive ulang lewat `grandTotal / 1.11`, lalu `ppn = grandTotal - subtotal`. Cara ini menghindari floating-point drift kalau kita simpan subtotal + ppn terpisah.
+### Perhitungan balik PPN 11%
+Transaksi disimpan sebagai grand total yang sudah termasuk PPN, bukan subtotal. Saat ditampilkan, subtotal dihitung ulang melalui `grandTotal / 1.11`, lalu `ppn = grandTotal - subtotal`. Cara ini menghindari floating-point drift yang dapat terjadi bila subtotal dan PPN disimpan terpisah.
 
----
+## Scripts
 
-## 📜 Scripts
+| Perintah | Fungsi |
+|---|---|
+| `npm run dev` | Menjalankan dev server pada port 5173 |
+| `npm run build` | Membangun versi production ke folder `dist/` |
+| `npm run preview` | Meninjau hasil build secara lokal |
+| `npm run lint` | Menjalankan ESLint |
+| `docker compose up dev` | Menjalankan via Docker dengan hot reload pada port 5173 |
+| `docker compose --profile prod up --build prod` | Build dan menyajikan via nginx pada port 8080 |
 
-| Command           | Fungsi                                |
-|-------------------|---------------------------------------|
-| `npm run dev`     | Jalankan dev server (port 5173)       |
-| `npm run build`   | Build production ke folder `dist/`    |
-| `npm run preview` | Preview hasil build secara lokal      |
-| `npm run lint`    | Lint dengan ESLint                    |
+## Deploy
 
----
+Proyek ini dapat di-deploy ke Vercel, Netlify, atau layanan static hosting lainnya. Untuk Vercel:
 
-## 🚢 Deploy
+1. Push repo ke GitHub.
+2. Impor ke Vercel. Konfigurasi Vite akan terdeteksi otomatis.
+3. Atur environment variable `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di dashboard Vercel.
+4. Deploy.
 
-Proyek ini siap deploy ke **Vercel** / **Netlify** / static hosting apapun.
-
-**Vercel (recommended):**
-
-1. Push repo ke GitHub
-2. Import ke Vercel → auto-detect Vite
-3. Set environment variables di Vercel Dashboard:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. Deploy
-
-Build output: `dist/` (default Vite).
-
----
-
-<div align="center">
-
-Dibuat dengan ❤️ untuk UMKM Indonesia.
-
-</div>
+Output build berada di folder `dist/`.
